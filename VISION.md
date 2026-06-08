@@ -34,6 +34,11 @@ Contribution rules:
 
 ## Security And Privacy
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 Twitter sessions and user intent are sensitive. Real credentials must stay out
 of git, and tweet creation should remain explicit through user-controlled UI.
 
