@@ -12,7 +12,10 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 ## Repository Contents
 
 - `Fabric.framework` - source or example code
+- `CHANGES.md` - recent maintenance changes
+- `Makefile` - local static verification entry point
 - `SECURITY.md` - security reporting and disclosure guidance
+- `scripts/check-baseline.py` - static TwitterKit/Fabric baseline checks
 - `tweetshake` - source or example code
 - `tweetshake.xcodeproj` - Xcode project file
 - `tweetshakeTests` - source or example code
@@ -24,7 +27,7 @@ Additional scan context:
 
 - Source directories: Fabric.framework, TwitterCore.framework, TwitterKit.framework, tweetshake, tweetshakeTests
 - Dependency and build manifests: none detected
-- Entry points or build surfaces: tweetshake.xcodeproj
+- Entry points or build surfaces: `make check`, tweetshake.xcodeproj
 - Test-looking files: tweetshakeTests/tweetshakeTests.swift
 
 ## Getting Started
@@ -32,6 +35,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
+- Python 3 for static verification with `make check`
 - macOS with Xcode for building Apple platform projects
 
 ### Setup
@@ -39,16 +43,28 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/ios-tweet-shake.git
 cd ios-tweet-shake
+make check
 ```
 
-The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
+Copy `tweetshake/Info.plist.example` to `tweetshake/Info.plist` on a local
+machine before running in Xcode, then replace the placeholder Fabric/Twitter
+values locally. The real app plist is ignored so credentials stay out of git.
 
 ## Running or Using the Project
 
 - Open `tweetshake.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
+- The app uses bundled legacy `Fabric.framework`, `TwitterCore.framework`, and
+  `TwitterKit.framework` binaries.
+- Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
+  the device opens the composer instead of silently posting.
 
 ## Testing and Verification
 
+- `make check` runs `scripts/check-baseline.py`, which verifies Xcode project
+  wiring, the sanitized `Info.plist.example`, the tracked test bundle plist,
+  plist/storyboard/asset files, TwitterKit login gating, shake-to-compose
+  behavior, vendored framework references, credential guardrails, and
+  user-confirmed posting boundaries.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -56,10 +72,13 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Configuration and Secrets
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
+- Keep local `.xcconfig`, `.env`, signing, and generated build files out of git.
 
 ## Security and Privacy Notes
 
 - Review changes touching authentication or token handling; examples from the scan include TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthSession.h, TwitterCore.framework/Headers/TWTRConstants.h, TwitterCore.framework/Headers/TWTRCoreOAuthSigning.h, and 5 more.
+- Do not commit real credentials to source or app plists. Do not add silent
+  posting, background account actions, or tweet-composer console logging.
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include Fabric.framework/Headers/FABAttributes.h, Fabric.framework/Headers/Fabric.h, TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthConfig.h, and 6 more.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthConfig.h, TwitterCore.framework/Headers/TWTRCoreOAuthSigning.h, TwitterKit.framework/Headers/TWTRAPIClient.h, and 3 more.
 - Review changes touching mobile permissions or privacy-sensitive device data; examples from the scan include TwitterCore.framework/Headers/TWTRConstants.h.
@@ -69,6 +88,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
+- Run `make check` before pushing changes to Swift sources, plist templates,
+  storyboards, assets, vendored framework references, or security docs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

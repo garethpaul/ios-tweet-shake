@@ -11,6 +11,8 @@ import TwitterKit
 
 class ViewController: UIViewController {
 
+    var lastComposeResult = "not started"
+
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -22,25 +24,19 @@ class ViewController: UIViewController {
     }
 
     override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent) {
-        if(event.subtype == UIEventSubtype.MotionShake) {
+        if motion == UIEventSubtype.MotionShake {
             let composer = TWTRComposer()
 
             composer.setText("I just shook my phone")
 
-            composer.showWithCompletion { (result) -> Void in
+            composer.showWithCompletion { [weak self] (result) -> Void in
                 if (result == TWTRComposerResult.Cancelled) {
-                    println("Tweet composition cancelled")
+                    self?.lastComposeResult = "cancelled"
                 }
                 else {
-                    println("Sending tweet!")
+                    self?.lastComposeResult = "sent"
                 }
             }
-            
         }
     }
-
-
-
-
 }
-

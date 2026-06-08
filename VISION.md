@@ -3,7 +3,7 @@
 This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
 
-iOS Tweet Shake is an Objective-C iOS sample that integrates TwitterKit/Fabric
+iOS Tweet Shake is a Swift iOS sample that integrates TwitterKit/Fabric
 and lets a user shake the phone to compose a tweet.
 
 The repository is useful as a legacy social and motion-interaction sample with
@@ -12,6 +12,11 @@ bundled Fabric/Twitter frameworks and a small Xcode project.
 The goal is to preserve the sample while making credentials, session data, and
 user-confirmed posting boundaries explicit.
 
+Current baseline: `make check` runs `scripts/check-baseline.py` to verify the
+legacy Xcode project shape, sanitized `Info.plist.example`, tracked test plist,
+TwitterKit/Fabric framework references, login gating, user-confirmed compose
+behavior, credential guardrails, and documentation.
+
 The current focus is:
 
 Priority:
@@ -19,6 +24,7 @@ Priority:
 - Preserve Twitter login and shake-triggered compose behavior
 - Keep Fabric/Twitter framework assumptions visible
 - Avoid committing real Twitter/Fabric credentials or signing material
+- Keep posting user-confirmed through the Twitter composer
 - Maintain security policy for the sample
 
 Next priorities:
@@ -32,6 +38,8 @@ Contribution rules:
 
 - One PR = one focused Twitter, motion, build, or documentation change.
 - Verify shake behavior on hardware when changing motion code.
+- Run `make check` before pushing source, project, plist template, asset,
+  vendored framework reference, or security documentation changes.
 - Keep credential placeholders empty in committed source.
 - Do not add silent account actions.
 

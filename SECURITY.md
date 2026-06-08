@@ -25,6 +25,18 @@ Helpful reports include:
 ## Project Security Posture
 
 - This repository appears to be an Apple platform application or Swift sample. The active security scope is the code and documentation on the default branch.
+- The app uses bundled legacy `Fabric.framework`, `TwitterCore.framework`, and
+  `TwitterKit.framework` binaries. Real Twitter/Fabric credentials, OAuth
+  tokens, signing files, and local configuration must stay out of git, including
+  committed source and app plists.
+- Keep `tweetshake/Info.plist.example` sanitized. The real
+  `tweetshake/Info.plist` is a local-only credential-bearing file.
+- Tweet creation should remain user-confirmed through `TWTRComposer`; do not add
+  silent posting, background account actions, tweet-composer console logging, or
+  hidden API calls without a separate security design.
+- Run `make check` after changing Swift sources, project metadata, plist
+  templates, storyboards, assets, vendored framework references, or security
+  docs.
 - Review found authentication, token, or session-related code paths; changes in those areas should receive security-focused review before merge.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.

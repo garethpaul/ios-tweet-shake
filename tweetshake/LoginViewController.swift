@@ -12,19 +12,26 @@ import TwitterKit
 
 class LoginViewController: UIViewController {
 
+    var loginStatus = "not started"
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        let logInButton = TWTRLogInButton(logInCompletion: {
-            (session: TWTRSession!, error: NSError!) in
-            // play with Twitter session
-            self.performSegueWithIdentifier("shake", sender: self)
+        let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
+            if session != nil && error == nil {
+                if let viewController = self {
+                    viewController.loginStatus = "authenticated"
+                    viewController.performSegueWithIdentifier("shake", sender: viewController)
+                }
+            } else {
+                if let viewController = self {
+                    viewController.loginStatus = "authentication failed"
+                }
+            }
         })
         logInButton.center = self.view.center
         self.view.addSubview(logInButton)
 
-        
         // Do any additional setup after loading the view, typically from a nib.
-        
     }
 
     override func didReceiveMemoryWarning() {

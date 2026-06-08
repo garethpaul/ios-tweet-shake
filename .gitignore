@@ -14,9 +14,16 @@ xcuserdata
 *.moved-aside
 DerivedData
 *.hmap
-Info.plist
+tweetshake/Info.plist
+!tweetshake/Info.plist.example
 *.ipa
 *.xcuserstate
+*.local.xcconfig
+*.secrets.xcconfig
+.env
+.env.*
+__pycache__/
+*.pyc
 
 # CocoaPods
 #
