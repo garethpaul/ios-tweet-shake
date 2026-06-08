@@ -43,3 +43,6 @@ of git, and tweet creation should remain explicit through user-controlled UI.
 - Silent posting or background account actions
 - Motion tracking unrelated to the compose flow
 - Broad dependency migration bundled with behavior changes
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
