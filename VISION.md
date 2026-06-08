@@ -1,5 +1,8 @@
 ## iOS Tweet Shake Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 iOS Tweet Shake is an Objective-C iOS sample that integrates TwitterKit/Fabric
 and lets a user shake the phone to compose a tweet.
 
