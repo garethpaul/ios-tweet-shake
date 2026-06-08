@@ -25,6 +25,11 @@ class ViewController: UIViewController {
 
     override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent) {
         if motion == UIEventSubtype.MotionShake && !isShowingComposer {
+            if !hasTwitterSession() {
+                showLoginRequiredMessage()
+                return
+            }
+
             isShowingComposer = true
             let composer = TWTRComposer()
 
@@ -34,5 +39,20 @@ class ViewController: UIViewController {
                 self?.isShowingComposer = false
             }
         }
+    }
+
+    func hasTwitterSession() -> Bool {
+        return Twitter.sharedInstance().session() != nil
+    }
+
+    func showLoginRequiredMessage() {
+        if self.presentedViewController != nil {
+            return
+        }
+
+        let alert = UIAlertController(title: "Twitter Login Required", message: "Sign in with Twitter before composing a tweet.", preferredStyle: UIAlertControllerStyle.Alert)
+        let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: nil)
+        alert.addAction(action)
+        self.presentViewController(alert, animated: true, completion: nil)
     }
 }

@@ -26,6 +26,7 @@ Priority:
 - Avoid committing real Twitter/Fabric credentials or signing material
 - Guard Fabric/TwitterKit startup until credential build settings are configured
 - Keep posting user-confirmed through the Twitter composer
+- Keep shake-to-compose guarded by a current local Twitter session
 - Maintain security policy for the sample
 
 Next priorities:
@@ -44,6 +45,7 @@ Contribution rules:
 - Keep credential placeholders empty in committed source.
 - Do not add silent account actions.
 - Keep failed or cancelled login out of the compose screen.
+- Keep missing-session states out of the compose screen.
 
 ## Security And Privacy
 

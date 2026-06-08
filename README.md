@@ -62,6 +62,9 @@ command-line overrides.
   screen.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
+- The shake screen checks for a current local Twitter session before presenting
+  the composer and shows a local login-required message when the session is
+  missing.
 
 Example command-line credential override:
 
@@ -79,7 +82,7 @@ xcodebuild -project tweetshake.xcodeproj \
   wiring, the committed app and test plists,
   plist/storyboard/asset files, TwitterKit login gating, shake-to-compose
   behavior, vendored framework references, credential guardrails, and
-  user-confirmed posting boundaries.
+  user-confirmed posting and session boundaries.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -94,7 +97,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Review changes touching authentication or token handling; examples from the scan include TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthSession.h, TwitterCore.framework/Headers/TWTRConstants.h, TwitterCore.framework/Headers/TWTRCoreOAuthSigning.h, and 5 more.
 - Do not commit real credentials to source or app plists. Do not add silent
-  posting, background account actions, or tweet-composer console logging.
+  posting, background account actions, session bypasses, or tweet-composer
+  console logging.
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include Fabric.framework/Headers/FABAttributes.h, Fabric.framework/Headers/Fabric.h, TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthConfig.h, and 6 more.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include TwitterCore.framework/Headers/TWTRAPIErrorCode.h, TwitterCore.framework/Headers/TWTRAuthConfig.h, TwitterCore.framework/Headers/TWTRCoreOAuthSigning.h, TwitterKit.framework/Headers/TWTRAPIClient.h, and 3 more.
 - Review changes touching mobile permissions or privacy-sensitive device data; examples from the scan include TwitterCore.framework/Headers/TWTRConstants.h.

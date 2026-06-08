@@ -37,8 +37,8 @@ Helpful reports include:
   silent posting, background account actions, tweet-composer console logging, or
   hidden API calls without a separate security design.
 - The app should not enter the shake-to-compose flow unless Twitter login
-  succeeds, and it should skip TwitterKit startup when credential placeholders
-  are unresolved.
+  succeeds and a current local Twitter session is present, and it should skip
+  TwitterKit startup when credential placeholders are unresolved.
 - Run `make check` after changing Swift sources, project metadata, plist
   plists, storyboards, assets, vendored framework references, or security
   docs.

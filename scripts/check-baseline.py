@@ -10,7 +10,8 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
+BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
+SESSION_GUARD_PLAN = ROOT / "docs/plans/2026-06-08-compose-session-guard.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -106,6 +107,7 @@ def main():
         "TwitterKit.framework/TwitterKit",
         "TwitterKit.framework/Headers/Twitter.h",
         "TwitterKit.framework/Headers/TWTRComposer.h",
+        "docs/plans/2026-06-08-compose-session-guard.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -146,7 +148,8 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
-    plan = PLAN.read_text(encoding="utf-8") if PLAN.exists() else ""
+    baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
+    session_guard_plan = SESSION_GUARD_PLAN.read_text(encoding="utf-8") if SESSION_GUARD_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -202,6 +205,15 @@ def main():
     require("isShowingComposer" in shake_controller and "motion == UIEventSubtype.MotionShake && !isShowingComposer" in shake_controller,
             "shake controller must avoid stacking multiple composer presentations",
             failures)
+    require("func hasTwitterSession() -> Bool" in shake_controller and
+            "Twitter.sharedInstance().session() != nil" in shake_controller and
+            "if !hasTwitterSession()" in shake_controller,
+            "shake controller must verify a local Twitter session before composing",
+            failures)
+    require("func showLoginRequiredMessage()" in shake_controller and "Twitter Login Required" in shake_controller and
+            "presentedViewController != nil" in shake_controller,
+            "shake controller must show one local login-required message when the session is missing",
+            failures)
     require("composer.setText(\"I just shook my phone\")" in shake_controller and "composer.showWithCompletion" in shake_controller,
             "shake controller must preserve user-confirmed composer behavior",
             failures)
@@ -225,8 +237,8 @@ def main():
     require("make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
             "README must document static verification and local credential build settings",
             failures)
-    require("credential setup message" in readme and "user-confirmed" in readme,
-            "README must document credential and composer guardrails",
+    require("credential setup message" in readme and "user-confirmed" in readme and "session" in readme.lower(),
+            "README must document credential, session, and composer guardrails",
             failures)
     require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision,
             "VISION must describe the current tweet-shake baseline",
@@ -234,11 +246,11 @@ def main():
     require("TwitterKit" in security and "make check" in security and "placeholder" in security,
             "SECURITY must document Twitter privacy and credential-placeholder guardrails",
             failures)
-    require("Info.plist" in changes and "failed or cancelled login" in changes and "make check" in changes,
-            "CHANGES must record plist, login, and baseline hardening",
+    require("Info.plist" in changes and "failed or cancelled login" in changes and "session" in changes.lower() and "make check" in changes,
+            "CHANGES must record plist, login, session, and baseline hardening",
             failures)
-    require("status: completed" in plan,
-            "plan must be marked completed",
+    require("status: completed" in baseline_plan and "status: completed" in session_guard_plan,
+            "plans must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):
