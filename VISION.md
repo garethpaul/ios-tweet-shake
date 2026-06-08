@@ -37,7 +37,7 @@ Contribution rules:
 Twitter sessions and user intent are sensitive. Real credentials must stay out
 of git, and tweet creation should remain explicit through user-controlled UI.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Hardcoded Twitter/Fabric credentials
 - Silent posting or background account actions
