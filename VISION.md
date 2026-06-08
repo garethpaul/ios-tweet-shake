@@ -13,7 +13,7 @@ The goal is to preserve the sample while making credentials, session data, and
 user-confirmed posting boundaries explicit.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` to verify the
-legacy Xcode project shape, sanitized `Info.plist.example`, tracked test plist,
+legacy Xcode project shape, committed app/test plists,
 TwitterKit/Fabric framework references, login gating, user-confirmed compose
 behavior, credential guardrails, and documentation.
 
@@ -24,6 +24,7 @@ Priority:
 - Preserve Twitter login and shake-triggered compose behavior
 - Keep Fabric/Twitter framework assumptions visible
 - Avoid committing real Twitter/Fabric credentials or signing material
+- Guard Fabric/TwitterKit startup until credential build settings are configured
 - Keep posting user-confirmed through the Twitter composer
 - Maintain security policy for the sample
 
@@ -38,10 +39,11 @@ Contribution rules:
 
 - One PR = one focused Twitter, motion, build, or documentation change.
 - Verify shake behavior on hardware when changing motion code.
-- Run `make check` before pushing source, project, plist template, asset,
+- Run `make check` before pushing source, project, plist, asset,
   vendored framework reference, or security documentation changes.
 - Keep credential placeholders empty in committed source.
 - Do not add silent account actions.
+- Keep failed or cancelled login out of the compose screen.
 
 ## Security And Privacy
 
@@ -51,6 +53,8 @@ Canonical security policy and reporting:
 
 Twitter sessions and user intent are sensitive. Real credentials must stay out
 of git, and tweet creation should remain explicit through user-controlled UI.
+The committed app plist uses build-setting placeholders so local credentials can
+be supplied without changing tracked files.
 
 ## What We Will Not Merge (For Now)
 

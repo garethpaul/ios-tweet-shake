@@ -37,6 +37,7 @@ Additional scan context:
 - Git
 - Python 3 for static verification with `make check`
 - macOS with Xcode for building Apple platform projects
+- Fabric/TwitterKit credentials from an app you control when exercising login and compose behavior
 
 ### Setup
 
@@ -46,22 +47,36 @@ cd ios-tweet-shake
 make check
 ```
 
-Copy `tweetshake/Info.plist.example` to `tweetshake/Info.plist` on a local
-machine before running in Xcode, then replace the placeholder Fabric/Twitter
-values locally. The real app plist is ignored so credentials stay out of git.
+The committed `tweetshake/Info.plist` uses build-setting placeholders for
+`FABRIC_API_KEY`, `TWITTER_CONSUMER_KEY`, and `TWITTER_CONSUMER_SECRET`. Keep
+real values in local Xcode build settings, local `.xcconfig` files, or
+command-line overrides.
 
 ## Running or Using the Project
 
 - Open `tweetshake.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 - The app uses bundled legacy `Fabric.framework`, `TwitterCore.framework`, and
   `TwitterKit.framework` binaries.
+- When credential build settings are empty or unresolved placeholders, the app
+  skips TwitterKit startup and shows a credential setup message on the login
+  screen.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
+
+Example command-line credential override:
+
+```bash
+xcodebuild -project tweetshake.xcodeproj \
+  -target tweetshake \
+  FABRIC_API_KEY=... \
+  TWITTER_CONSUMER_KEY=... \
+  TWITTER_CONSUMER_SECRET=...
+```
 
 ## Testing and Verification
 
 - `make check` runs `scripts/check-baseline.py`, which verifies Xcode project
-  wiring, the sanitized `Info.plist.example`, the tracked test bundle plist,
+  wiring, the committed app and test plists,
   plist/storyboard/asset files, TwitterKit login gating, shake-to-compose
   behavior, vendored framework references, credential guardrails, and
   user-confirmed posting boundaries.
@@ -72,7 +87,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Configuration and Secrets
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
-- Keep local `.xcconfig`, `.env`, signing, and generated build files out of git.
+- Keep local `.xcconfig`, `.env`, signing, local plist overrides, and generated build files out of git.
+- The checked-in Fabric/TwitterKit values must stay as build-setting placeholders, not real credentials.
 
 ## Security and Privacy Notes
 
@@ -88,7 +104,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
-- Run `make check` before pushing changes to Swift sources, plist templates,
+- Run `make check` before pushing changes to Swift sources, plists,
   storyboards, assets, vendored framework references, or security docs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.

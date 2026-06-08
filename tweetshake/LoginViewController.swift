@@ -12,19 +12,22 @@ import TwitterKit
 
 class LoginViewController: UIViewController {
 
-    var loginStatus = "not started"
-
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        if !TweetShakeHasConfiguredTwitterCredentials() {
+            showCredentialSetupMessage()
+            return
+        }
+
         let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
             if session != nil && error == nil {
                 if let viewController = self {
-                    viewController.loginStatus = "authenticated"
                     viewController.performSegueWithIdentifier("shake", sender: viewController)
                 }
             } else {
                 if let viewController = self {
-                    viewController.loginStatus = "authentication failed"
+                    viewController.showLoginRequiredMessage()
                 }
             }
         })
@@ -32,6 +35,22 @@ class LoginViewController: UIViewController {
         self.view.addSubview(logInButton)
 
         // Do any additional setup after loading the view, typically from a nib.
+    }
+
+    func showCredentialSetupMessage() {
+        let messageLabel = UILabel(frame: CGRectInset(self.view.bounds, 24.0, 0.0))
+        messageLabel.text = "Configure Twitter credentials before signing in."
+        messageLabel.textAlignment = NSTextAlignment.Center
+        messageLabel.textColor = UIColor.whiteColor()
+        messageLabel.numberOfLines = 0
+        self.view.addSubview(messageLabel)
+    }
+
+    func showLoginRequiredMessage() {
+        let alert = UIAlertController(title: "Twitter Login Required", message: "Sign in with Twitter before composing a tweet.", preferredStyle: UIAlertControllerStyle.Alert)
+        let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: nil)
+        alert.addAction(action)
+        self.presentViewController(alert, animated: true, completion: nil)
     }
 
     override func didReceiveMemoryWarning() {

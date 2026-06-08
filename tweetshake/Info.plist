@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.gpj.$(PRODUCT_NAME:rfc1034identifier)</string>
+	<string>com.garethpaul.tweetshake</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -21,9 +21,11 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.twitter.sdk.ios</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>twitterkit-YOUR_TWITTER_CONSUMER_KEY</string>
+				<string>twitterkit-$(TWITTER_CONSUMER_KEY)</string>
 			</array>
 		</dict>
 	</array>
@@ -32,16 +34,16 @@
 	<key>Fabric</key>
 	<dict>
 		<key>APIKey</key>
-		<string>YOUR_FABRIC_API_KEY</string>
+		<string>$(FABRIC_API_KEY)</string>
 		<key>Kits</key>
 		<array>
 			<dict>
 				<key>KitInfo</key>
 				<dict>
 					<key>consumerKey</key>
-					<string>YOUR_TWITTER_CONSUMER_KEY</string>
+					<string>$(TWITTER_CONSUMER_KEY)</string>
 					<key>consumerSecret</key>
-					<string>YOUR_TWITTER_CONSUMER_SECRET</string>
+					<string>$(TWITTER_CONSUMER_SECRET)</string>
 				</dict>
 				<key>KitName</key>
 				<string>Twitter</string>
@@ -61,6 +63,15 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

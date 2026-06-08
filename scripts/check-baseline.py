@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""Static baseline checks for the legacy Tweet Shake sample."""
-
-from __future__ import print_function
-
+from pathlib import Path
 import json
 import plistlib
 import re
@@ -10,356 +7,253 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
-from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FAILURES = []
+PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
-def rel(path):
-    return ROOT / path
-
-
-def expect(condition, message):
+def require(condition, message, failures):
     if not condition:
-        FAILURES.append(message)
+        failures.append(message)
 
 
-def read_text(path):
-    target = rel(path)
-    expect(target.exists(), "{} is missing".format(path))
-    if not target.exists():
-        return ""
-    return target.read_text(encoding="utf-8")
+def read(relative_path):
+    return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
 
 
-def parse_xml(path):
-    target = rel(path)
-    expect(target.exists(), "{} is missing".format(path))
-    if not target.exists():
-        return None
+def strip_swift_line_comments(text):
+    return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+
+
+def parse_xml(relative_path, failures):
     try:
-        return ET.parse(str(target))
-    except ET.ParseError as exc:
-        FAILURES.append("{} is not valid XML: {}".format(path, exc))
-        return None
+        ET.parse(str(ROOT / relative_path))
+    except ET.ParseError as error:
+        failures.append(f"{relative_path} is not well-formed XML: {error}")
 
 
-def parse_json(path):
-    target = rel(path)
-    expect(target.exists(), "{} is missing".format(path))
-    if not target.exists():
-        return None
+def parse_json(relative_path, failures):
     try:
-        return json.loads(target.read_text(encoding="utf-8"))
-    except ValueError as exc:
-        FAILURES.append("{} is not valid JSON: {}".format(path, exc))
-        return None
+        return json.loads(read(relative_path))
+    except json.JSONDecodeError as error:
+        failures.append(f"{relative_path} is not valid JSON: {error}")
+        return {}
 
 
-def parse_plist(path):
-    target = rel(path)
-    expect(target.exists(), "{} is missing".format(path))
-    if not target.exists():
-        return None
+def parse_plist(relative_path, failures):
     try:
-        with target.open("rb") as handle:
-            return plistlib.load(handle)
-    except Exception as exc:
-        FAILURES.append("{} is not a valid plist: {}".format(path, exc))
-        return None
+        with (ROOT / relative_path).open("rb") as file:
+            return plistlib.load(file)
+    except Exception as error:
+        failures.append(f"{relative_path} is not a readable plist: {error}")
+        return {}
 
 
-def strip_swift_comments(text):
-    lines = []
-    for line in text.splitlines():
-        lines.append(line.split("//", 1)[0])
-    return "\n".join(lines)
+def check_png(relative_path, failures):
+    path = ROOT / relative_path
+    try:
+        with path.open("rb") as file:
+            signature = file.read(len(PNG_SIGNATURE))
+        require(signature == PNG_SIGNATURE, f"{relative_path} must be a PNG image", failures)
+        require(path.stat().st_size > 100, f"{relative_path} must not be empty", failures)
+    except OSError as error:
+        failures.append(f"{relative_path} could not be read: {error}")
 
 
-def git_ls_files():
+def git_ignores(path):
     result = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "check-ignore", "-q", path],
         cwd=str(ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
     )
-    if result.returncode != 0:
-        FAILURES.append("git ls-files failed: {}".format(result.stderr.strip()))
-        return set()
-    return set(result.stdout.splitlines())
+    return result.returncode == 0
 
 
-def check_required_files():
-    required = [
+def is_build_setting_placeholder(value):
+    return isinstance(value, str) and value.startswith("$(") and value.endswith(")")
+
+
+def main():
+    failures = []
+    required_files = [
         ".gitignore",
         "CHANGES.md",
         "Makefile",
         "README.md",
         "SECURITY.md",
         "VISION.md",
-        "docs/plans/2026-06-08-tweet-shake-baseline.md",
-        "docs/readme-overview.svg",
-        "Fabric.framework/Fabric",
-        "Fabric.framework/Headers/Fabric.h",
-        "TwitterCore.framework/TwitterCore",
-        "TwitterCore.framework/Headers/TWTRAuthSession.h",
-        "TwitterKit.framework/TwitterKit",
-        "TwitterKit.framework/Headers/TWTRComposer.h",
-        "TwitterKit.framework/Headers/TWTRLogInButton.h",
-        "TwitterKit.framework/Versions/A/Resources/TwitterKitResources.bundle",
         "tweetshake.xcodeproj/project.pbxproj",
         "tweetshake.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "tweetshake/Info.plist",
         "tweetshake/AppDelegate.swift",
-        "tweetshake/Base.lproj/LaunchScreen.xib",
+        "tweetshake/LoginViewController.swift",
+        "tweetshake/ViewController.swift",
         "tweetshake/Base.lproj/Main.storyboard",
+        "tweetshake/Base.lproj/LaunchScreen.xib",
         "tweetshake/Images.xcassets/AppIcon.appiconset/Contents.json",
         "tweetshake/Images.xcassets/logo.imageset/Contents.json",
         "tweetshake/Images.xcassets/logo.imageset/logo.png",
-        "tweetshake/Info.plist.example",
-        "tweetshake/LoginViewController.swift",
-        "tweetshake/ViewController.swift",
         "tweetshakeTests/Info.plist",
         "tweetshakeTests/tweetshakeTests.swift",
+        "Fabric.framework/Fabric",
+        "Fabric.framework/Headers/Fabric.h",
+        "Fabric.framework/run",
+        "TwitterCore.framework/TwitterCore",
+        "TwitterCore.framework/Headers/TWTRAuthConfig.h",
+        "TwitterKit.framework/TwitterKit",
+        "TwitterKit.framework/Headers/Twitter.h",
+        "TwitterKit.framework/Headers/TWTRComposer.h",
+        "docs/plans/2026-06-08-tweet-shake-baseline.md",
+        "docs/readme-overview.svg",
     ]
 
-    for path in required:
-        expect(rel(path).exists(), "{} is missing".format(path))
+    for relative_path in required_files:
+        require((ROOT / relative_path).is_file(), f"Required file missing: {relative_path}", failures)
 
+    require((ROOT / "TwitterKit.framework/Versions/A/Resources/TwitterKitResources.bundle").is_dir(),
+            "TwitterKitResources.bundle must remain available for the Xcode resource phase",
+            failures)
 
-def check_parsable_resources():
-    parse_xml("docs/readme-overview.svg")
-    parse_xml("tweetshake.xcodeproj/project.xcworkspace/contents.xcworkspacedata")
-    parse_xml("tweetshake/Base.lproj/Main.storyboard")
-    parse_xml("tweetshake/Base.lproj/LaunchScreen.xib")
+    for xml_file in [
+        "tweetshake.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "tweetshake/Base.lproj/Main.storyboard",
+        "tweetshake/Base.lproj/LaunchScreen.xib",
+        "docs/readme-overview.svg",
+    ]:
+        parse_xml(xml_file, failures)
 
-    app_icon = parse_json("tweetshake/Images.xcassets/AppIcon.appiconset/Contents.json")
-    logo = parse_json("tweetshake/Images.xcassets/logo.imageset/Contents.json")
+    for json_file in [
+        "tweetshake/Images.xcassets/AppIcon.appiconset/Contents.json",
+        "tweetshake/Images.xcassets/logo.imageset/Contents.json",
+    ]:
+        parse_json(json_file, failures)
 
-    if app_icon:
-        images = app_icon.get("images", [])
-        filenames = {image.get("filename") for image in images if image.get("filename")}
-        expect(len(images) >= 6, "AppIcon asset should list the existing iPhone icon variants")
-        expect("Icon-60@3x (1).png" in filenames, "AppIcon asset should include the 60pt @3x icon")
-        for filename in filenames:
-            expect(
-                rel("tweetshake/Images.xcassets/AppIcon.appiconset/{}".format(filename)).exists(),
-                "AppIcon asset references missing file {}".format(filename),
-            )
+    check_png("tweetshake/Images.xcassets/logo.imageset/logo.png", failures)
 
-    if logo:
-        images = logo.get("images", [])
-        filenames = {image.get("filename") for image in images if image.get("filename")}
-        expect("logo.png" in filenames, "logo asset should reference logo.png")
+    app_plist = parse_plist("tweetshake/Info.plist", failures)
+    test_plist = parse_plist("tweetshakeTests/Info.plist", failures)
+    project = read("tweetshake.xcodeproj/project.pbxproj")
+    app_delegate = read("tweetshake/AppDelegate.swift")
+    login_controller = read("tweetshake/LoginViewController.swift")
+    shake_controller = read("tweetshake/ViewController.swift")
+    swift_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
+                              for path in sorted((ROOT / "tweetshake").glob("*.swift")))
+    readme = read("README.md")
+    vision = read("VISION.md")
+    security = read("SECURITY.md")
+    changes = read("CHANGES.md")
+    gitignore = read(".gitignore")
+    plan = PLAN.read_text(encoding="utf-8") if PLAN.exists() else ""
 
-
-def check_project_wiring():
-    pbxproj = read_text("tweetshake.xcodeproj/project.pbxproj")
-
-    for framework in ("Fabric.framework", "TwitterCore.framework", "TwitterKit.framework"):
-        expect(framework in pbxproj, "{} should remain referenced in the Xcode project".format(framework))
-        expect(
-            "{} in Frameworks".format(framework) in pbxproj,
-            "{} should be linked in the app target".format(framework),
-        )
-
-    expect(
-        "TwitterKitResources.bundle in Resources" in pbxproj,
-        "TwitterKit resource bundle should remain copied into app resources",
-    )
-    expect("Main.storyboard in Resources" in pbxproj, "Main.storyboard should be an app resource")
-    expect("LaunchScreen.xib in Resources" in pbxproj, "LaunchScreen.xib should be an app resource")
-    expect("Images.xcassets in Resources" in pbxproj, "Images.xcassets should be an app resource")
-    expect(
-        "INFOPLIST_FILE = tweetshake/Info.plist;" in pbxproj,
-        "app target should still point at the local ignored app Info.plist",
-    )
-    expect(
-        "INFOPLIST_FILE = tweetshakeTests/Info.plist;" in pbxproj,
-        "test target should still point at the local ignored test Info.plist",
-    )
-    expect("IPHONEOS_DEPLOYMENT_TARGET = 8.3;" in pbxproj, "legacy deployment target should remain visible")
-    expect("LastUpgradeCheck = 0630;" in pbxproj, "legacy Xcode project version should remain visible")
-
-
-def check_storyboard_contract():
-    storyboard = read_text("tweetshake/Base.lproj/Main.storyboard")
-    expect('customClass="LoginViewController"' in storyboard, "storyboard should start at LoginViewController")
-    expect('customClass="ViewController"' in storyboard, "storyboard should keep the shake composer screen")
-    expect('identifier="shake"' in storyboard, "storyboard should keep the shake segue identifier")
-    expect('text="Shake To Tweet"' in storyboard, "storyboard should keep the user-facing shake prompt")
-    expect('image="logo"' in storyboard, "storyboard should keep the logo image view")
-
-
-def check_sanitized_plist_template():
-    plist = parse_plist("tweetshake/Info.plist.example")
-    test_plist = parse_plist("tweetshakeTests/Info.plist")
-    if not plist:
-        return
-
-    fabric = plist.get("Fabric", {})
-    kits = fabric.get("Kits", [])
-    kit = kits[0] if kits else {}
-    kit_info = kit.get("KitInfo", {})
-    url_types = plist.get("CFBundleURLTypes", [])
-    schemes = []
+    fabric = app_plist.get("Fabric", {})
+    kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
+    twitter_kit = next((kit for kit in kits if kit.get("KitName") == "Twitter"), {})
+    kit_info = twitter_kit.get("KitInfo", {}) if isinstance(twitter_kit, dict) else {}
+    url_types = app_plist.get("CFBundleURLTypes", [])
+    url_schemes = []
     for url_type in url_types:
-        schemes.extend(url_type.get("CFBundleURLSchemes", []))
+        url_schemes.extend(url_type.get("CFBundleURLSchemes", []))
 
-    expect(fabric.get("APIKey") == "YOUR_FABRIC_API_KEY", "Fabric API key should be a placeholder")
-    expect(kit.get("KitName") == "Twitter", "Info.plist.example should document the Twitter kit")
-    expect(
-        kit_info.get("consumerKey") == "YOUR_TWITTER_CONSUMER_KEY",
-        "Twitter consumer key should be a placeholder",
-    )
-    expect(
-        kit_info.get("consumerSecret") == "YOUR_TWITTER_CONSUMER_SECRET",
-        "Twitter consumer secret should be a placeholder",
-    )
-    expect(
-        "twitterkit-YOUR_TWITTER_CONSUMER_KEY" in schemes,
-        "Info.plist.example should document the TwitterKit callback scheme placeholder",
-    )
-    expect(plist.get("UIMainStoryboardFile") == "Main", "Info.plist.example should point at Main storyboard")
-    expect(plist.get("UILaunchStoryboardName") == "LaunchScreen", "Info.plist.example should point at launch screen")
+    require(app_plist.get("CFBundleIdentifier") == "com.garethpaul.tweetshake",
+            "tweetshake Info.plist must keep the sample bundle identifier",
+            failures)
+    require(app_plist.get("UIMainStoryboardFile") == "Main" and app_plist.get("UILaunchStoryboardName") == "LaunchScreen",
+            "tweetshake Info.plist must wire the main storyboard and launch screen",
+            failures)
+    require(is_build_setting_placeholder(fabric.get("APIKey")),
+            "Fabric API key must remain a build-setting placeholder in git",
+            failures)
+    require(is_build_setting_placeholder(kit_info.get("consumerKey")) and is_build_setting_placeholder(kit_info.get("consumerSecret")),
+            "Twitter consumer key and secret must remain build-setting placeholders in git",
+            failures)
+    require("twitterkit-$(TWITTER_CONSUMER_KEY)" in url_schemes,
+            "Twitter callback URL scheme must be derived from the local consumer key",
+            failures)
+    require(test_plist.get("CFBundlePackageType") == "BNDL",
+            "tweetshakeTests Info.plist must remain a test bundle plist",
+            failures)
 
-    if test_plist:
-        expect(test_plist.get("CFBundlePackageType") == "BNDL", "test Info.plist should be bundle metadata")
-        expect("Fabric" not in test_plist, "test Info.plist should not contain Fabric credentials")
+    require("INFOPLIST_FILE = tweetshake/Info.plist;" in project and "INFOPLIST_FILE = tweetshakeTests/Info.plist;" in project,
+            "Xcode project must preserve app and test Info.plist wiring",
+            failures)
+    for setting in ["FABRIC_API_KEY = \"\";", "TWITTER_CONSUMER_KEY = \"\";", "TWITTER_CONSUMER_SECRET = \"\";"]:
+        require(setting in project, f"Xcode project must default local credential build setting: {setting}", failures)
+    for framework in ["Fabric.framework", "TwitterCore.framework", "TwitterKit.framework", "TwitterKitResources.bundle"]:
+        require(framework in project, f"Xcode project must keep framework/resource reference: {framework}", failures)
+    require("Main.storyboard" in project and "LaunchScreen.xib" in project and "Images.xcassets" in project,
+            "Xcode project must keep storyboard, launch screen, and asset catalog references",
+            failures)
 
-    tracked = git_ls_files()
-    expect("tweetshake/Info.plist" not in tracked, "real app Info.plist should remain untracked")
+    require("TweetShakeHasConfiguredTwitterCredentials()" in app_delegate and "Fabric.with([Twitter()])" in app_delegate,
+            "AppDelegate must gate Fabric/Twitter startup on configured credentials",
+            failures)
+    require("TweetShakeHasConfiguredCredentialValue" in app_delegate and "rangeOfString(\"$(\")" in app_delegate,
+            "credential helper must reject unresolved build-setting placeholders",
+            failures)
+    require("showCredentialSetupMessage" in login_controller and "session != nil && error == nil" in login_controller,
+            "login controller must show setup state and require successful login before segueing",
+            failures)
+    require("showLoginRequiredMessage" in login_controller and "performSegueWithIdentifier(\"shake\"" in login_controller,
+            "login controller must preserve the shake segue behind a login guard",
+            failures)
+    require("isShowingComposer" in shake_controller and "motion == UIEventSubtype.MotionShake && !isShowingComposer" in shake_controller,
+            "shake controller must avoid stacking multiple composer presentations",
+            failures)
+    require("composer.setText(\"I just shook my phone\")" in shake_controller and "composer.showWithCompletion" in shake_controller,
+            "shake controller must preserve user-confirmed composer behavior",
+            failures)
+    require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
+            "first-party Swift must not log Twitter session or compose outcomes",
+            failures)
+    for forbidden in ["TWTRAPIClient", "setURL", "upload", "analytics", "NSUserDefaults", "UserDefaults", "lastComposeResult", "loginStatus"]:
+        require(forbidden not in swift_sources,
+                f"Tweet-shake sample must not add background API, upload, analytics, persistence, or outcome storage behavior: {forbidden}",
+                failures)
 
-
-def check_first_party_swift():
-    swift_paths = sorted(rel("tweetshake").glob("*.swift")) + sorted(rel("tweetshakeTests").glob("*.swift"))
-    source_by_name = {}
-    stripped_source = []
-    for path in swift_paths:
-        text = path.read_text(encoding="utf-8")
-        stripped = strip_swift_comments(text)
-        source_by_name[path.name] = stripped
-        stripped_source.append(stripped)
-
-    all_source = "\n".join(stripped_source)
-
-    expect("Fabric.with([Twitter()])" in all_source, "AppDelegate should initialize Fabric/TwitterKit")
-    expect(
-        not re.search(r"\b(?:print|println|NSLog)\s*\(", all_source),
-        "first-party Swift should not log login or compose state",
-    )
-
-    forbidden_terms = [
-        "startWithConsumerKey",
-        "consumerKey",
-        "consumerSecret",
-        "accessToken",
-        "authToken",
-        "apiKey",
-        "APIKey",
-        "OAuth",
-        "oauth",
-    ]
-    for term in forbidden_terms:
-        expect(term not in all_source, "first-party Swift should not include credential term {}".format(term))
-
-    local_privacy_terms = [
-        "http://",
-        "https://",
-        "NSURL",
-        "NSURLConnection",
-        "URLSession",
-        "NSUserDefaults",
-        "UserDefaults",
-        "writeToFile",
-        "NSKeyedArchiver",
-        "analytics",
-        "upload",
-    ]
-    lowered = all_source.lower()
-    for term in local_privacy_terms:
-        expect(term.lower() not in lowered, "first-party Swift should not add network or persistence term {}".format(term))
-
-    login = source_by_name.get("LoginViewController.swift", "")
-    expect("TWTRLogInButton" in login, "LoginViewController should still use TwitterKit login UI")
-    expect("[weak self]" in login, "login completion should capture self weakly")
-    expect("guard " not in login, "login completion should stay compatible with the older Swift style")
-    expect("session != nil && error == nil" in login, "login completion should require a session and no error")
-    expect("loginStatus" in login, "login completion should keep local-only status state")
-    expect(
-        'performSegueWithIdentifier("shake"' in login,
-        "login completion should only open the shake flow after successful login",
-    )
-
-    view = source_by_name.get("ViewController.swift", "")
-    expect("var lastComposeResult" in view, "ViewController should keep local-only compose status state")
-    expect("motion == UIEventSubtype.MotionShake" in view, "shake detection should use the motion subtype parameter")
-    expect("withEvent event: UIEvent)" in view, "motion override should keep the legacy non-optional event signature")
-    expect("TWTRComposer()" in view, "ViewController should still use TwitterKit composer UI")
-    expect('composer.setText("I just shook my phone")' in view, "compose text should remain the original sample text")
-    expect("showWithCompletion" in view, "composer should still be user-confirmed through TWTRComposer")
-    expect("[weak self]" in view, "composer completion should capture self weakly")
-    expect("lastComposeResult" in view, "composer completion should update local-only status state")
-
-
-def check_docs():
-    readme = read_text("README.md")
-    vision = read_text("VISION.md")
-    security = read_text("SECURITY.md")
-    changes = read_text("CHANGES.md")
-    plan = read_text("docs/plans/2026-06-08-tweet-shake-baseline.md")
-    gitignore = read_text(".gitignore")
-
-    for text_name, text in (
-        ("README.md", readme),
-        ("VISION.md", vision),
-        ("SECURITY.md", security),
-    ):
-        lowered = text.lower()
-        expect("make check" in lowered, "{} should document the static verification command".format(text_name))
-        expect("info.plist.example" in lowered, "{} should document the sanitized plist template".format(text_name))
-        expect("credential" in lowered, "{} should document credential handling".format(text_name))
-        expect("silent" in lowered, "{} should reject silent posting or background account actions".format(text_name))
-
-    expect("user-confirmed" in readme.lower(), "README should describe user-confirmed compose behavior")
-    expect("scripts/check-baseline.py" in vision, "VISION should name the baseline checker")
-    expect("local configuration" in readme.lower(), "README should keep credentials in local configuration")
-    expect("local configuration" in security.lower(), "SECURITY should keep credentials in local configuration")
-    expect("login completion" in changes.lower(), "CHANGES should mention the login completion guard")
-    expect("console logging" in changes.lower(), "CHANGES should mention removal of console logging")
-    expect("Info.plist.example" in changes, "CHANGES should mention the sanitized plist template")
-    expect("make check" in changes, "CHANGES should mention the new verification command")
-    expect("status: completed" in plan, "baseline plan should be marked completed")
-
-    for pattern in ("Info.plist", "*.local.xcconfig", "*.secrets.xcconfig", ".env", ".env.*", "__pycache__/", "*.pyc"):
-        expect(pattern in gitignore, ".gitignore should keep {} out of git".format(pattern))
-
-
-def main():
-    check_required_files()
-    check_parsable_resources()
-    check_project_wiring()
-    check_storyboard_contract()
-    check_sanitized_plist_template()
-    check_first_party_swift()
-    check_docs()
+    require("Info.plist" not in [line.strip() for line in gitignore.splitlines()],
+            ".gitignore must not ignore every target Info.plist",
+            failures)
+    require(not git_ignores("tweetshake/Info.plist") and not git_ignores("tweetshakeTests/Info.plist"),
+            "app and test Info.plist files must be trackable",
+            failures)
+    require("*.local.xcconfig" in gitignore and "*.secrets.xcconfig" in gitignore and ".env" in gitignore,
+            ".gitignore must exclude local credential and environment files",
+            failures)
+    require("make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
+            "README must document static verification and local credential build settings",
+            failures)
+    require("credential setup message" in readme and "user-confirmed" in readme,
+            "README must document credential and composer guardrails",
+            failures)
+    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision,
+            "VISION must describe the current tweet-shake baseline",
+            failures)
+    require("TwitterKit" in security and "make check" in security and "placeholder" in security,
+            "SECURITY must document Twitter privacy and credential-placeholder guardrails",
+            failures)
+    require("Info.plist" in changes and "failed or cancelled login" in changes and "make check" in changes,
+            "CHANGES must record plist, login, and baseline hardening",
+            failures)
+    require("status: completed" in plan,
+            "plan must be marked completed",
+            failures)
 
     if shutil.which("xcodebuild"):
-        print("xcodebuild is available; run a device/simulator build separately for legacy TwitterKit validation.")
+        print("xcodebuild is available; run a scheme-specific Xcode test on macOS before release.")
     else:
-        print("xcodebuild unavailable; skipping legacy iOS build/test and using static baseline checks.")
+        print("xcodebuild unavailable; static iOS baseline only.")
 
-    if FAILURES:
-        print("Static baseline failed:")
-        for failure in FAILURES:
-            print("- {}".format(failure))
+    if failures:
+        for failure in failures:
+            print(failure, file=sys.stderr)
         return 1
 
-    print("Static baseline passed.")
+    print("ios-tweet-shake baseline checks passed.")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

@@ -5,17 +5,21 @@ status: completed
 ## Context
 
 `ios-tweet-shake` is a legacy Swift iOS sample that uses bundled Fabric,
-TwitterCore, and TwitterKit frameworks. The real app `Info.plist` is ignored
-because Twitter/Fabric credentials belong in local configuration, so repository
-verification needs a sanitized template and static checks while full validation
-remains a macOS/Xcode/device responsibility.
+TwitterCore, and TwitterKit frameworks. The Xcode project references app and
+test `Info.plist` files, so the repository needs committed plist files with
+credential build-setting placeholders while real Twitter/Fabric credentials stay
+in local configuration. Full validation remains a macOS/Xcode/device
+responsibility.
 
 ## Objectives
 
 - Keep Twitter login and shake-triggered composer behavior user-controlled.
+- Restore committed app and test `Info.plist` files referenced by the Xcode project.
+- Keep Fabric/Twitter credential values as build-setting placeholders in git.
+- Guard Fabric/TwitterKit startup when credential build settings are empty or unresolved placeholders.
 - Avoid segueing into the composer flow when login fails or returns no session.
 - Remove console logging of Twitter login or compose state.
-- Keep real Fabric/Twitter credentials out of git while documenting required placeholders.
+- Avoid retaining compose outcomes in local state.
 - Add a reproducible `make check` baseline for project metadata, storyboard/asset parsing, framework references, credential boundaries, and local privacy guardrails.
 
 ## Verification

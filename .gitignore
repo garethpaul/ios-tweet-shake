@@ -14,12 +14,12 @@ xcuserdata
 *.moved-aside
 DerivedData
 *.hmap
-tweetshake/Info.plist
-!tweetshake/Info.plist.example
 *.ipa
 *.xcuserstate
 *.local.xcconfig
 *.secrets.xcconfig
+*.local.plist
+*.secrets.plist
 .env
 .env.*
 __pycache__/

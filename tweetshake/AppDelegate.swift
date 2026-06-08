@@ -10,6 +10,51 @@ import UIKit
 import Fabric
 import TwitterKit
 
+func TweetShakeHasConfiguredTwitterCredentials() -> Bool {
+    let bundle = NSBundle.mainBundle()
+
+    if let fabric = bundle.objectForInfoDictionaryKey("Fabric") as? NSDictionary {
+        let fabricAPIKey = fabric["APIKey"] as? String
+
+        if !TweetShakeHasConfiguredCredentialValue(fabricAPIKey) {
+            return false
+        }
+
+        if let kits = fabric["Kits"] as? [NSDictionary] {
+            for kit in kits {
+                if let kitName = kit["KitName"] as? String {
+                    if kitName != "Twitter" {
+                        continue
+                    }
+                }
+
+                if let kitInfo = kit["KitInfo"] as? NSDictionary {
+                    let consumerKey = kitInfo["consumerKey"] as? String
+                    let consumerSecret = kitInfo["consumerSecret"] as? String
+
+                    return TweetShakeHasConfiguredCredentialValue(consumerKey) && TweetShakeHasConfiguredCredentialValue(consumerSecret)
+                }
+            }
+        }
+    }
+
+    return false
+}
+
+func TweetShakeHasConfiguredCredentialValue(value: String?) -> Bool {
+    if value == nil {
+        return false
+    }
+
+    let trimmed = value!.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+
+    if trimmed.isEmpty {
+        return false
+    }
+
+    return trimmed.rangeOfString("$(") == nil && trimmed.rangeOfString("REPLACE_") == nil
+}
+
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -19,7 +64,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
-        Fabric.with([Twitter()])
+        if TweetShakeHasConfiguredTwitterCredentials() {
+            Fabric.with([Twitter()])
+        }
 
         return true
     }
@@ -48,4 +95,3 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
 }
-

@@ -377,6 +377,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				FABRIC_API_KEY = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -384,6 +385,8 @@
 				INFOPLIST_FILE = tweetshake/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TWITTER_CONSUMER_KEY = "";
+				TWITTER_CONSUMER_SECRET = "";
 			};
 			name = Debug;
 		};
@@ -391,6 +394,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				FABRIC_API_KEY = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -398,6 +402,8 @@
 				INFOPLIST_FILE = tweetshake/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TWITTER_CONSUMER_KEY = "";
+				TWITTER_CONSUMER_SECRET = "";
 			};
 			name = Release;
 		};

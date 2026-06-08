@@ -29,13 +29,18 @@ Helpful reports include:
   `TwitterKit.framework` binaries. Real Twitter/Fabric credentials, OAuth
   tokens, signing files, and local configuration must stay out of git, including
   committed source and app plists.
-- Keep `tweetshake/Info.plist.example` sanitized. The real
-  `tweetshake/Info.plist` is a local-only credential-bearing file.
+- Keep `tweetshake/Info.plist` sanitized with build-setting placeholders. Real
+  Fabric/TwitterKit credential values belong only in local build settings,
+  local `.xcconfig` files, environment variables, or other untracked
+  machine-local configuration.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; do not add
   silent posting, background account actions, tweet-composer console logging, or
   hidden API calls without a separate security design.
+- The app should not enter the shake-to-compose flow unless Twitter login
+  succeeds, and it should skip TwitterKit startup when credential placeholders
+  are unresolved.
 - Run `make check` after changing Swift sources, project metadata, plist
-  templates, storyboards, assets, vendored framework references, or security
+  plists, storyboards, assets, vendored framework references, or security
   docs.
 - Review found authentication, token, or session-related code paths; changes in those areas should receive security-focused review before merge.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
