@@ -32,7 +32,8 @@ Helpful reports include:
 - Keep `tweetshake/Info.plist` sanitized with build-setting placeholders. Real
   Fabric/TwitterKit credential values belong only in local build settings,
   local `.xcconfig` files, environment variables, or other untracked
-  machine-local configuration.
+  machine-local configuration. The credential helper tests should keep missing,
+  blank, placeholder, and trimmed local values covered.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; do not add
   silent posting, background account actions, tweet-composer console logging, or
   hidden API calls without a separate security design.

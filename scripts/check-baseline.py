@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
 SESSION_GUARD_PLAN = ROOT / "docs/plans/2026-06-08-compose-session-guard.md"
 CREDENTIAL_HELPER_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-unwrap.md"
+CREDENTIAL_TEST_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-tests.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -110,6 +111,7 @@ def main():
         "TwitterKit.framework/Headers/TWTRComposer.h",
         "docs/plans/2026-06-08-compose-session-guard.md",
         "docs/plans/2026-06-08-credential-helper-unwrap.md",
+        "docs/plans/2026-06-08-credential-helper-tests.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -140,6 +142,7 @@ def main():
     app_plist = parse_plist("tweetshake/Info.plist", failures)
     test_plist = parse_plist("tweetshakeTests/Info.plist", failures)
     project = read("tweetshake.xcodeproj/project.pbxproj")
+    tests = read("tweetshakeTests/tweetshakeTests.swift")
     app_delegate = read("tweetshake/AppDelegate.swift")
     login_controller = read("tweetshake/LoginViewController.swift")
     shake_controller = read("tweetshake/ViewController.swift")
@@ -153,6 +156,7 @@ def main():
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     session_guard_plan = SESSION_GUARD_PLAN.read_text(encoding="utf-8") if SESSION_GUARD_PLAN.exists() else ""
     credential_helper_plan = CREDENTIAL_HELPER_PLAN.read_text(encoding="utf-8") if CREDENTIAL_HELPER_PLAN.exists() else ""
+    credential_test_plan = CREDENTIAL_TEST_PLAN.read_text(encoding="utf-8") if CREDENTIAL_TEST_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -185,6 +189,9 @@ def main():
     require("INFOPLIST_FILE = tweetshake/Info.plist;" in project and "INFOPLIST_FILE = tweetshakeTests/Info.plist;" in project,
             "Xcode project must preserve app and test Info.plist wiring",
             failures)
+    require("ENABLE_TESTABILITY = YES;" in project and "@testable import tweetshake" in tests,
+            "Xcode project and unit tests must keep tweetshake app code testable from XCTest",
+            failures)
     for setting in ["FABRIC_API_KEY = \"\";", "TWITTER_CONSUMER_KEY = \"\";", "TWITTER_CONSUMER_SECRET = \"\";"]:
         require(setting in project, f"Xcode project must default local credential build setting: {setting}", failures)
     for framework in ["Fabric.framework", "TwitterCore.framework", "TwitterKit.framework", "TwitterKitResources.bundle"]:
@@ -201,6 +208,12 @@ def main():
             failures)
     require("guard let credential = value else" in app_delegate and "value!" not in app_delegate,
             "credential helper must avoid force-unwrapping optional credential values",
+            failures)
+    require("testCredentialHelperRejectsMissingAndPlaceholderValues" in tests and
+            "testCredentialHelperAcceptsTrimmedCredentialValues" in tests and
+            "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
+            "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
+            "tweetshakeTests must replace template tests with credential helper assertions",
             failures)
     require("showCredentialSetupMessage" in login_controller and "session != nil && error == nil" in login_controller,
             "login controller must show setup state and require successful login before segueing",
@@ -244,21 +257,24 @@ def main():
             "README must document static verification and local credential build settings",
             failures)
     require("credential setup message" in readme and "user-confirmed" in readme and
-            "credential helper" in readme and "session" in readme.lower(),
+            "credential helper" in readme and "credential helper tests" in readme and "session" in readme.lower(),
             "README must document credential helper, session, and composer guardrails",
             failures)
-    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision and "credential helper" in vision,
+    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision and
+            "credential helper" in vision and "credential helper tests" in vision,
             "VISION must describe the current tweet-shake baseline",
             failures)
-    require("TwitterKit" in security and "make check" in security and "placeholder" in security,
+    require("TwitterKit" in security and "make check" in security and
+            "placeholder" in security and "credential helper tests" in security,
             "SECURITY must document Twitter privacy and credential-placeholder guardrails",
             failures)
     require("Info.plist" in changes and "failed or cancelled login" in changes and
-            "credential helper" in changes and "session" in changes.lower() and "make check" in changes,
+            "credential helper" in changes and "credential helper tests" in changes and
+            "session" in changes.lower() and "make check" in changes,
             "CHANGES must record plist, login, credential helper, session, and baseline hardening",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
-            "status: completed" in credential_helper_plan,
+            "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan,
             "plans must be marked completed",
             failures)
 

@@ -26,6 +26,7 @@ Priority:
 - Avoid committing real Twitter/Fabric credentials or signing material
 - Guard Fabric/TwitterKit startup until credential build settings are configured
 - Keep credential helper handling free of optional force unwraps
+- Keep credential helper tests focused on local placeholder handling
 - Keep posting user-confirmed through the Twitter composer
 - Keep shake-to-compose guarded by a current local Twitter session
 - Maintain security policy for the sample

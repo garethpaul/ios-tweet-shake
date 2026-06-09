@@ -8,29 +8,19 @@
 
 import UIKit
 import XCTest
+@testable import tweetshake
 
 class tweetshakeTests: XCTestCase {
-    
-    override func setUp() {
-        super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+
+    func testCredentialHelperRejectsMissingAndPlaceholderValues() {
+        XCTAssertFalse(TweetShakeHasConfiguredCredentialValue(nil), "Missing credentials should be rejected")
+        XCTAssertFalse(TweetShakeHasConfiguredCredentialValue("  "), "Blank credentials should be rejected")
+        XCTAssertFalse(TweetShakeHasConfiguredCredentialValue("$(TWITTER_CONSUMER_KEY)"), "Build setting placeholders should be rejected")
+        XCTAssertFalse(TweetShakeHasConfiguredCredentialValue("REPLACE_SECRET"), "Replacement placeholders should be rejected")
     }
-    
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
+
+    func testCredentialHelperAcceptsTrimmedCredentialValues() {
+        XCTAssertTrue(TweetShakeHasConfiguredCredentialValue("  local-consumer-key  "), "Non-placeholder credentials should be accepted after trimming")
     }
-    
-    func testExample() {
-        // This is an example of a functional test case.
-        XCTAssert(true, "Pass")
-    }
-    
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measureBlock() {
-            // Put the code you want to measure the time of here.
-        }
-    }
-    
+
 }
