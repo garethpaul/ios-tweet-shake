@@ -16,6 +16,7 @@ CREDENTIAL_HELPER_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-unwrap.
 CREDENTIAL_TEST_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-tests.md"
 LOGIN_ALERT_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-login-alert-guard.md"
 KIT_NAME_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-twitter-kit-name-guard.md"
+INCOMPLETE_CREDENTIAL_PLAN = ROOT / "docs/plans/2026-06-09-incomplete-twitter-credentials.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -116,6 +117,7 @@ def main():
         "docs/plans/2026-06-08-credential-helper-tests.md",
         "docs/plans/2026-06-09-login-alert-guard.md",
         "docs/plans/2026-06-09-twitter-kit-name-guard.md",
+        "docs/plans/2026-06-09-incomplete-twitter-credentials.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -163,6 +165,7 @@ def main():
     credential_test_plan = CREDENTIAL_TEST_PLAN.read_text(encoding="utf-8") if CREDENTIAL_TEST_PLAN.exists() else ""
     login_alert_guard_plan = LOGIN_ALERT_GUARD_PLAN.read_text(encoding="utf-8") if LOGIN_ALERT_GUARD_PLAN.exists() else ""
     kit_name_guard_plan = KIT_NAME_GUARD_PLAN.read_text(encoding="utf-8") if KIT_NAME_GUARD_PLAN.exists() else ""
+    incomplete_credential_plan = INCOMPLETE_CREDENTIAL_PLAN.read_text(encoding="utf-8") if INCOMPLETE_CREDENTIAL_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -223,6 +226,8 @@ def main():
     require("testCredentialHelperRejectsMissingAndPlaceholderValues" in tests and
             "testCredentialHelperAcceptsTrimmedCredentialValues" in tests and
             "testTwitterCredentialHelperRequiresNamedTwitterKit" in tests and
+            "testTwitterCredentialHelperRejectsMissingFabricAPIKey" in tests and
+            "testTwitterCredentialHelperRejectsMissingConsumerSecret" in tests and
             "testTwitterCredentialHelperAcceptsNamedTwitterKit" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
@@ -274,29 +279,32 @@ def main():
             failures)
     require("credential setup message" in readme and "user-confirmed" in readme and
             "credential helper" in readme and "credential helper tests" in readme and "session" in readme.lower() and
-            "duplicate login failure alerts" in readme and "Twitter kit name" in readme,
+            "duplicate login failure alerts" in readme and "Twitter kit name" in readme and "incomplete credentials" in readme,
             "README must document credential helper, session, login alert, and composer guardrails",
             failures)
     require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision and
             "credential helper" in vision and "credential helper tests" in vision and
-            "duplicate login failure alerts" in vision and "Twitter kit name" in vision,
+            "duplicate login failure alerts" in vision and "Twitter kit name" in vision and "incomplete credentials" in vision,
             "VISION must describe the current tweet-shake baseline",
             failures)
     require("TwitterKit" in security and "make check" in security and
             "placeholder" in security and "credential helper tests" in security and
-            "duplicate login failure alerts" in security and "Twitter kit name" in security,
+            "duplicate login failure alerts" in security and "Twitter kit name" in security and "incomplete credentials" in security,
             "SECURITY must document Twitter privacy and credential-placeholder guardrails",
             failures)
     require("Info.plist" in changes and "failed or cancelled login" in changes and
             "credential helper" in changes and "credential helper tests" in changes and
             "duplicate login failure alerts" in changes and "Twitter kit name" in changes and
-            "session" in changes.lower() and "make check" in changes,
+            "incomplete credentials" in changes and "session" in changes.lower() and "make check" in changes,
             "CHANGES must record plist, login, credential helper, session, and baseline hardening",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
             "plans must be marked completed",
+            failures)
+    require("status: completed" in incomplete_credential_plan,
+            "incomplete credential plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

@@ -62,7 +62,9 @@ command-line overrides.
   screen. The credential helper rejects missing values without force-unwrapping
   optional configuration. Credential helper tests cover missing, blank,
   placeholder, trimmed local values, and the Twitter kit name boundary. Failed
-  login attempts avoid stacking duplicate login failure alerts.
+  login attempts avoid stacking duplicate login failure alerts. Incomplete credentials
+  such as a missing Fabric API key or missing Twitter consumer secret stay
+  covered by focused helper tests.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
 - The shake screen checks for a current local Twitter session before presenting
@@ -86,7 +88,7 @@ xcodebuild -project tweetshake.xcodeproj \
   plist/storyboard/asset files, TwitterKit login gating, login alert handling,
   shake-to-compose behavior, vendored framework references, credential helper
   guardrails, credential helper tests, the Twitter kit name guard,
-  user-confirmed posting, and session boundaries.
+  incomplete credentials, user-confirmed posting, and session boundaries.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.

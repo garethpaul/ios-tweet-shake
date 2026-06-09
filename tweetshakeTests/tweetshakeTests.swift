@@ -39,6 +39,38 @@ class tweetshakeTests: XCTestCase {
         XCTAssertFalse(TweetShakeHasConfiguredTwitterCredentials(fabric), "Credential-looking kit info should be rejected unless it belongs to the Twitter kit")
     }
 
+    func testTwitterCredentialHelperRejectsMissingFabricAPIKey() {
+        let fabric: NSDictionary = [
+            "Kits": [
+                [
+                    "KitName": "Twitter",
+                    "KitInfo": [
+                        "consumerKey": "consumer-key",
+                        "consumerSecret": "consumer-secret"
+                    ]
+                ]
+            ]
+        ]
+
+        XCTAssertFalse(TweetShakeHasConfiguredTwitterCredentials(fabric), "Fabric API key must be configured before Twitter startup")
+    }
+
+    func testTwitterCredentialHelperRejectsMissingConsumerSecret() {
+        let fabric: NSDictionary = [
+            "APIKey": "fabric-api-key",
+            "Kits": [
+                [
+                    "KitName": "Twitter",
+                    "KitInfo": [
+                        "consumerKey": "consumer-key"
+                    ]
+                ]
+            ]
+        ]
+
+        XCTAssertFalse(TweetShakeHasConfiguredTwitterCredentials(fabric), "Twitter consumer secret must be configured before Twitter startup")
+    }
+
     func testTwitterCredentialHelperAcceptsNamedTwitterKit() {
         let fabric: NSDictionary = [
             "APIKey": "fabric-api-key",

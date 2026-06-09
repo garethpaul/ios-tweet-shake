@@ -4,6 +4,8 @@
 
 - Avoided stacking duplicate login failure alerts when repeated failed login
   callbacks occur.
+- Added incomplete credentials coverage for missing Fabric API keys and missing
+  Twitter consumer secrets.
 
 ## 2026-06-08
 
