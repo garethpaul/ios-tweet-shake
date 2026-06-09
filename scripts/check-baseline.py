@@ -17,6 +17,7 @@ CREDENTIAL_TEST_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-tests.md"
 LOGIN_ALERT_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-login-alert-guard.md"
 KIT_NAME_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-twitter-kit-name-guard.md"
 INCOMPLETE_CREDENTIAL_PLAN = ROOT / "docs/plans/2026-06-09-incomplete-twitter-credentials.md"
+LOGIN_LAYOUT_PLAN = ROOT / "docs/plans/2026-06-09-login-layout-recentering.md"
 MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -119,6 +120,7 @@ def main():
         "docs/plans/2026-06-09-login-alert-guard.md",
         "docs/plans/2026-06-09-twitter-kit-name-guard.md",
         "docs/plans/2026-06-09-incomplete-twitter-credentials.md",
+        "docs/plans/2026-06-09-login-layout-recentering.md",
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
@@ -169,6 +171,7 @@ def main():
     login_alert_guard_plan = LOGIN_ALERT_GUARD_PLAN.read_text(encoding="utf-8") if LOGIN_ALERT_GUARD_PLAN.exists() else ""
     kit_name_guard_plan = KIT_NAME_GUARD_PLAN.read_text(encoding="utf-8") if KIT_NAME_GUARD_PLAN.exists() else ""
     incomplete_credential_plan = INCOMPLETE_CREDENTIAL_PLAN.read_text(encoding="utf-8") if INCOMPLETE_CREDENTIAL_PLAN.exists() else ""
+    login_layout_plan = LOGIN_LAYOUT_PLAN.read_text(encoding="utf-8") if LOGIN_LAYOUT_PLAN.exists() else ""
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
@@ -246,6 +249,16 @@ def main():
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
             failures)
+    require("var logInButton: TWTRLogInButton?" in login_controller and
+            "var credentialSetupMessageLabel: UILabel?" in login_controller and
+            "override func viewDidLayoutSubviews()" in login_controller and
+            "centerLoginButton()" in login_controller and
+            "layoutCredentialSetupMessage()" in login_controller and
+            "CGRectGetMidX(self.view.bounds)" in login_controller and
+            "CGRectGetMidY(self.view.bounds)" in login_controller and
+            "CGRectInset(self.view.bounds, 24.0, 0.0)" in login_controller,
+            "login controller must recenter and reframe login/setup UI after layout changes",
+            failures)
     require("isShowingComposer" in shake_controller and "motion == UIEventSubtype.MotionShake && !isShowingComposer" in shake_controller,
             "shake controller must avoid stacking multiple composer presentations",
             failures)
@@ -287,13 +300,15 @@ def main():
             failures)
     require("credential setup message" in readme and "user-confirmed" in readme and
             "credential helper" in readme and "credential helper tests" in readme and "session" in readme.lower() and
-            "duplicate login failure alerts" in readme and "Twitter kit name" in readme and "incomplete credentials" in readme,
-            "README must document credential helper, session, login alert, and composer guardrails",
+            "duplicate login failure alerts" in readme and "Twitter kit name" in readme and
+            "incomplete credentials" in readme and "login layout" in readme,
+            "README must document credential helper, session, login layout, login alert, and composer guardrails",
             failures)
     require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and
             "make build" in vision and "failed or cancelled login" in vision and
             "credential helper" in vision and "credential helper tests" in vision and
-            "duplicate login failure alerts" in vision and "Twitter kit name" in vision and "incomplete credentials" in vision,
+            "duplicate login failure alerts" in vision and "Twitter kit name" in vision and
+            "incomplete credentials" in vision and "login layout" in vision,
             "VISION must describe the current tweet-shake baseline",
             failures)
     require("TwitterKit" in security and "make check" in security and
@@ -304,7 +319,8 @@ def main():
     require("Info.plist" in changes and "failed or cancelled login" in changes and
             "credential helper" in changes and "credential helper tests" in changes and
             "duplicate login failure alerts" in changes and "Twitter kit name" in changes and
-            "incomplete credentials" in changes and "session" in changes.lower() and "make check" in changes,
+            "incomplete credentials" in changes and "login layout" in changes and
+            "session" in changes.lower() and "make check" in changes,
             "CHANGES must record plist, login, credential helper, session, and baseline hardening",
             failures)
     require("make lint" in changes and "make test" in changes and "make build" in changes,
@@ -317,6 +333,9 @@ def main():
             failures)
     require("status: completed" in incomplete_credential_plan,
             "incomplete credential plan must be marked completed",
+            failures)
+    require("status: completed" in login_layout_plan,
+            "login layout plan must be marked completed",
             failures)
     require("status: completed" in make_gates_plan,
             "make gate aliases plan must be marked completed",

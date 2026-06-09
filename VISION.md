@@ -16,7 +16,8 @@ Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 `scripts/check-baseline.py` to verify the legacy Xcode project shape, committed
 app/test plists, TwitterKit/Fabric framework references, login gating,
 user-confirmed compose behavior, duplicate login failure alerts, credential
-helper guardrails, and Twitter kit name checks for incomplete credentials.
+helper guardrails, Twitter kit name checks for incomplete credentials, and
+login layout recentering.
 
 The current focus is:
 
@@ -31,6 +32,7 @@ Priority:
 - Require the Twitter kit name before accepting KitInfo credentials
 - Keep incomplete credentials covered by focused helper tests
 - Avoid stacking duplicate login failure alerts
+- Keep login layout centered after view layout changes
 - Keep posting user-confirmed through the Twitter composer
 - Keep shake-to-compose guarded by a current local Twitter session
 - Keep `make lint`, `make test`, `make build`, and `make check` available as

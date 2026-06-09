@@ -12,6 +12,9 @@ import TwitterKit
 
 class LoginViewController: UIViewController {
 
+    var logInButton: TWTRLogInButton?
+    var credentialSetupMessageLabel: UILabel?
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -31,19 +34,44 @@ class LoginViewController: UIViewController {
                 }
             }
         })
-        logInButton.center = self.view.center
+        self.logInButton = logInButton
         self.view.addSubview(logInButton)
+        centerLoginButton()
 
         // Do any additional setup after loading the view, typically from a nib.
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        centerLoginButton()
+        layoutCredentialSetupMessage()
+    }
+
+    func centerLoginButton() {
+        if let logInButton = self.logInButton {
+            logInButton.center = CGPointMake(
+                CGRectGetMidX(self.view.bounds),
+                CGRectGetMidY(self.view.bounds)
+            )
+        }
+    }
+
+    func layoutCredentialSetupMessage() {
+        if let messageLabel = self.credentialSetupMessageLabel {
+            messageLabel.frame = CGRectInset(self.view.bounds, 24.0, 0.0)
+        }
+    }
+
     func showCredentialSetupMessage() {
-        let messageLabel = UILabel(frame: CGRectInset(self.view.bounds, 24.0, 0.0))
+        let messageLabel = UILabel(frame: CGRectZero)
         messageLabel.text = "Configure Twitter credentials before signing in."
         messageLabel.textAlignment = NSTextAlignment.Center
         messageLabel.textColor = UIColor.whiteColor()
         messageLabel.numberOfLines = 0
+        self.credentialSetupMessageLabel = messageLabel
         self.view.addSubview(messageLabel)
+        layoutCredentialSetupMessage()
     }
 
     func showLoginRequiredMessage() {

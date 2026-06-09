@@ -68,6 +68,9 @@ command-line overrides.
   login attempts avoid stacking duplicate login failure alerts. Incomplete credentials
   such as a missing Fabric API key or missing Twitter consumer secret stay
   covered by focused helper tests.
+- The login layout keeps the generated Twitter login button centered and the
+  credential setup message fitted from the current view bounds after layout
+  changes.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
 - The shake screen checks for a current local Twitter session before presenting
@@ -92,7 +95,8 @@ xcodebuild -project tweetshake.xcodeproj \
   plist/storyboard/asset files, TwitterKit login gating, login alert handling,
   shake-to-compose behavior, vendored framework references, credential helper
   guardrails, credential helper tests, the Twitter kit name guard,
-  incomplete credentials, user-confirmed posting, and session boundaries.
+  incomplete credentials, login layout, user-confirmed posting, and session
+  boundaries.
 - The `lint`, `test`, and `build` targets intentionally alias the static
   baseline on hosts without the legacy Xcode toolchain, keeping the standard
   local gate commands available without claiming to replace Xcode verification.
