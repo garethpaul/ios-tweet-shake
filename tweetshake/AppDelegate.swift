@@ -12,29 +12,35 @@ import TwitterKit
 
 func TweetShakeHasConfiguredTwitterCredentials() -> Bool {
     let bundle = NSBundle.mainBundle()
+    let fabric = bundle.objectForInfoDictionaryKey("Fabric") as? NSDictionary
 
-    if let fabric = bundle.objectForInfoDictionaryKey("Fabric") as? NSDictionary {
-        let fabricAPIKey = fabric["APIKey"] as? String
+    return TweetShakeHasConfiguredTwitterCredentials(fabric)
+}
 
-        if !TweetShakeHasConfiguredCredentialValue(fabricAPIKey) {
-            return false
-        }
+func TweetShakeHasConfiguredTwitterCredentials(fabric: NSDictionary?) -> Bool {
+    guard let fabric = fabric else {
+        return false
+    }
 
-        if let kits = fabric["Kits"] as? [NSDictionary] {
-            for kit in kits {
-                if let kitName = kit["KitName"] as? String {
-                    if kitName != "Twitter" {
-                        continue
-                    }
-                }
+    let fabricAPIKey = fabric["APIKey"] as? String
 
-                if let kitInfo = kit["KitInfo"] as? NSDictionary {
-                    let consumerKey = kitInfo["consumerKey"] as? String
-                    let consumerSecret = kitInfo["consumerSecret"] as? String
+    if !TweetShakeHasConfiguredCredentialValue(fabricAPIKey) {
+        return false
+    }
 
-                    return TweetShakeHasConfiguredCredentialValue(consumerKey) && TweetShakeHasConfiguredCredentialValue(consumerSecret)
-                }
+    if let kits = fabric["Kits"] as? [NSDictionary] {
+        for kit in kits {
+            guard let kitName = kit["KitName"] as? String where kitName == "Twitter" else {
+                continue
             }
+            guard let kitInfo = kit["KitInfo"] as? NSDictionary else {
+                return false
+            }
+
+            let consumerKey = kitInfo["consumerKey"] as? String
+            let consumerSecret = kitInfo["consumerSecret"] as? String
+
+            return TweetShakeHasConfiguredCredentialValue(consumerKey) && TweetShakeHasConfiguredCredentialValue(consumerSecret)
         }
     }
 

@@ -23,4 +23,37 @@ class tweetshakeTests: XCTestCase {
         XCTAssertTrue(TweetShakeHasConfiguredCredentialValue("  local-consumer-key  "), "Non-placeholder credentials should be accepted after trimming")
     }
 
+    func testTwitterCredentialHelperRequiresNamedTwitterKit() {
+        let fabric: NSDictionary = [
+            "APIKey": "fabric-api-key",
+            "Kits": [
+                [
+                    "KitInfo": [
+                        "consumerKey": "consumer-key",
+                        "consumerSecret": "consumer-secret"
+                    ]
+                ]
+            ]
+        ]
+
+        XCTAssertFalse(TweetShakeHasConfiguredTwitterCredentials(fabric), "Credential-looking kit info should be rejected unless it belongs to the Twitter kit")
+    }
+
+    func testTwitterCredentialHelperAcceptsNamedTwitterKit() {
+        let fabric: NSDictionary = [
+            "APIKey": "fabric-api-key",
+            "Kits": [
+                [
+                    "KitName": "Twitter",
+                    "KitInfo": [
+                        "consumerKey": "consumer-key",
+                        "consumerSecret": "consumer-secret"
+                    ]
+                ]
+            ]
+        ]
+
+        XCTAssertTrue(TweetShakeHasConfiguredTwitterCredentials(fabric), "Named Twitter kit credentials should be accepted when all values are configured")
+    }
+
 }
