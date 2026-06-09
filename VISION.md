@@ -15,7 +15,7 @@ user-confirmed posting boundaries explicit.
 Current baseline: `make check` runs `scripts/check-baseline.py` to verify the
 legacy Xcode project shape, committed app/test plists,
 TwitterKit/Fabric framework references, login gating, user-confirmed compose
-behavior, credential guardrails, and documentation.
+behavior, credential helper guardrails, and documentation.
 
 The current focus is:
 
@@ -25,6 +25,7 @@ Priority:
 - Keep Fabric/Twitter framework assumptions visible
 - Avoid committing real Twitter/Fabric credentials or signing material
 - Guard Fabric/TwitterKit startup until credential build settings are configured
+- Keep credential helper handling free of optional force unwraps
 - Keep posting user-confirmed through the Twitter composer
 - Keep shake-to-compose guarded by a current local Twitter session
 - Maintain security policy for the sample

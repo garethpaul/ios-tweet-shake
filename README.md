@@ -59,7 +59,8 @@ command-line overrides.
   `TwitterKit.framework` binaries.
 - When credential build settings are empty or unresolved placeholders, the app
   skips TwitterKit startup and shows a credential setup message on the login
-  screen.
+  screen. The credential helper rejects missing values without force-unwrapping
+  optional configuration.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
 - The shake screen checks for a current local Twitter session before presenting
@@ -81,7 +82,7 @@ xcodebuild -project tweetshake.xcodeproj \
 - `make check` runs `scripts/check-baseline.py`, which verifies Xcode project
   wiring, the committed app and test plists,
   plist/storyboard/asset files, TwitterKit login gating, shake-to-compose
-  behavior, vendored framework references, credential guardrails, and
+  behavior, vendored framework references, credential helper guardrails, and
   user-confirmed posting and session boundaries.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 

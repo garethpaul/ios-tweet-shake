@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
 SESSION_GUARD_PLAN = ROOT / "docs/plans/2026-06-08-compose-session-guard.md"
+CREDENTIAL_HELPER_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-unwrap.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -108,6 +109,7 @@ def main():
         "TwitterKit.framework/Headers/Twitter.h",
         "TwitterKit.framework/Headers/TWTRComposer.h",
         "docs/plans/2026-06-08-compose-session-guard.md",
+        "docs/plans/2026-06-08-credential-helper-unwrap.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -150,6 +152,7 @@ def main():
     gitignore = read(".gitignore")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     session_guard_plan = SESSION_GUARD_PLAN.read_text(encoding="utf-8") if SESSION_GUARD_PLAN.exists() else ""
+    credential_helper_plan = CREDENTIAL_HELPER_PLAN.read_text(encoding="utf-8") if CREDENTIAL_HELPER_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -196,6 +199,9 @@ def main():
     require("TweetShakeHasConfiguredCredentialValue" in app_delegate and "rangeOfString(\"$(\")" in app_delegate,
             "credential helper must reject unresolved build-setting placeholders",
             failures)
+    require("guard let credential = value else" in app_delegate and "value!" not in app_delegate,
+            "credential helper must avoid force-unwrapping optional credential values",
+            failures)
     require("showCredentialSetupMessage" in login_controller and "session != nil && error == nil" in login_controller,
             "login controller must show setup state and require successful login before segueing",
             failures)
@@ -237,19 +243,22 @@ def main():
     require("make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
             "README must document static verification and local credential build settings",
             failures)
-    require("credential setup message" in readme and "user-confirmed" in readme and "session" in readme.lower(),
-            "README must document credential, session, and composer guardrails",
+    require("credential setup message" in readme and "user-confirmed" in readme and
+            "credential helper" in readme and "session" in readme.lower(),
+            "README must document credential helper, session, and composer guardrails",
             failures)
-    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision,
+    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision and "credential helper" in vision,
             "VISION must describe the current tweet-shake baseline",
             failures)
     require("TwitterKit" in security and "make check" in security and "placeholder" in security,
             "SECURITY must document Twitter privacy and credential-placeholder guardrails",
             failures)
-    require("Info.plist" in changes and "failed or cancelled login" in changes and "session" in changes.lower() and "make check" in changes,
-            "CHANGES must record plist, login, session, and baseline hardening",
+    require("Info.plist" in changes and "failed or cancelled login" in changes and
+            "credential helper" in changes and "session" in changes.lower() and "make check" in changes,
+            "CHANGES must record plist, login, credential helper, session, and baseline hardening",
             failures)
-    require("status: completed" in baseline_plan and "status: completed" in session_guard_plan,
+    require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
+            "status: completed" in credential_helper_plan,
             "plans must be marked completed",
             failures)
 

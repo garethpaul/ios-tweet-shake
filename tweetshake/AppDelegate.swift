@@ -42,11 +42,11 @@ func TweetShakeHasConfiguredTwitterCredentials() -> Bool {
 }
 
 func TweetShakeHasConfiguredCredentialValue(value: String?) -> Bool {
-    if value == nil {
+    guard let credential = value else {
         return false
     }
 
-    let trimmed = value!.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+    let trimmed = credential.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
 
     if trimmed.isEmpty {
         return false

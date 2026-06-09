@@ -9,4 +9,5 @@
 - Used the motion subtype parameter for shake detection instead of reading the event object.
 - Restored the committed app `Info.plist` with build-setting placeholders for Fabric/Twitter values while keeping real credentials local.
 - Guarded Fabric/TwitterKit startup when credential build settings are empty or unresolved placeholders.
+- Removed the optional force unwrap from the credential helper.
 - Added `make check` and a static TwitterKit baseline for project wiring, credential placeholders, login/compose guardrails, and local privacy checks.
