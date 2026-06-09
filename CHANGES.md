@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added local `make lint`, `make test`, and `make build` gate aliases for the
+  static Tweet Shake baseline.
 - Avoided stacking duplicate login failure alerts when repeated failed login
   callbacks occur.
 - Added incomplete credentials coverage for missing Fabric API keys and missing

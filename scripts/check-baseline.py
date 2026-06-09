@@ -17,6 +17,7 @@ CREDENTIAL_TEST_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-tests.md"
 LOGIN_ALERT_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-login-alert-guard.md"
 KIT_NAME_GUARD_PLAN = ROOT / "docs/plans/2026-06-09-twitter-kit-name-guard.md"
 INCOMPLETE_CREDENTIAL_PLAN = ROOT / "docs/plans/2026-06-09-incomplete-twitter-credentials.md"
+MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -118,6 +119,7 @@ def main():
         "docs/plans/2026-06-09-login-alert-guard.md",
         "docs/plans/2026-06-09-twitter-kit-name-guard.md",
         "docs/plans/2026-06-09-incomplete-twitter-credentials.md",
+        "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -159,6 +161,7 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
+    makefile = read("Makefile")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     session_guard_plan = SESSION_GUARD_PLAN.read_text(encoding="utf-8") if SESSION_GUARD_PLAN.exists() else ""
     credential_helper_plan = CREDENTIAL_HELPER_PLAN.read_text(encoding="utf-8") if CREDENTIAL_HELPER_PLAN.exists() else ""
@@ -166,6 +169,7 @@ def main():
     login_alert_guard_plan = LOGIN_ALERT_GUARD_PLAN.read_text(encoding="utf-8") if LOGIN_ALERT_GUARD_PLAN.exists() else ""
     kit_name_guard_plan = KIT_NAME_GUARD_PLAN.read_text(encoding="utf-8") if KIT_NAME_GUARD_PLAN.exists() else ""
     incomplete_credential_plan = INCOMPLETE_CREDENTIAL_PLAN.read_text(encoding="utf-8") if INCOMPLETE_CREDENTIAL_PLAN.exists() else ""
+    make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -274,15 +278,20 @@ def main():
     require("*.local.xcconfig" in gitignore and "*.secrets.xcconfig" in gitignore and ".env" in gitignore,
             ".gitignore must exclude local credential and environment files",
             failures)
-    require("make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
-            "README must document static verification and local credential build settings",
+    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
+            "Makefile must expose lint, test, build, and check verification gates",
+            failures)
+    require("make lint" in readme and "make test" in readme and "make build" in readme and
+            "make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
+            "README must document static verification gates and local credential build settings",
             failures)
     require("credential setup message" in readme and "user-confirmed" in readme and
             "credential helper" in readme and "credential helper tests" in readme and "session" in readme.lower() and
             "duplicate login failure alerts" in readme and "Twitter kit name" in readme and "incomplete credentials" in readme,
             "README must document credential helper, session, login alert, and composer guardrails",
             failures)
-    require("scripts/check-baseline.py" in vision and "failed or cancelled login" in vision and
+    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and
+            "make build" in vision and "failed or cancelled login" in vision and
             "credential helper" in vision and "credential helper tests" in vision and
             "duplicate login failure alerts" in vision and "Twitter kit name" in vision and "incomplete credentials" in vision,
             "VISION must describe the current tweet-shake baseline",
@@ -298,6 +307,9 @@ def main():
             "incomplete credentials" in changes and "session" in changes.lower() and "make check" in changes,
             "CHANGES must record plist, login, credential helper, session, and baseline hardening",
             failures)
+    require("make lint" in changes and "make test" in changes and "make build" in changes,
+            "CHANGES must record the standard local gate aliases",
+            failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -305,6 +317,9 @@ def main():
             failures)
     require("status: completed" in incomplete_credential_plan,
             "incomplete credential plan must be marked completed",
+            failures)
+    require("status: completed" in make_gates_plan,
+            "make gate aliases plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

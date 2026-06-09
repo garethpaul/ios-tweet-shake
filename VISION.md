@@ -12,11 +12,11 @@ bundled Fabric/Twitter frameworks and a small Xcode project.
 The goal is to preserve the sample while making credentials, session data, and
 user-confirmed posting boundaries explicit.
 
-Current baseline: `make check` runs `scripts/check-baseline.py` to verify the
-legacy Xcode project shape, committed app/test plists,
-TwitterKit/Fabric framework references, login gating, user-confirmed compose
-behavior, duplicate login failure alerts, credential helper guardrails, and
-Twitter kit name checks for incomplete credentials.
+Current baseline: `make lint`, `make test`, `make build`, and `make check` run
+`scripts/check-baseline.py` to verify the legacy Xcode project shape, committed
+app/test plists, TwitterKit/Fabric framework references, login gating,
+user-confirmed compose behavior, duplicate login failure alerts, credential
+helper guardrails, and Twitter kit name checks for incomplete credentials.
 
 The current focus is:
 
@@ -33,6 +33,8 @@ Priority:
 - Avoid stacking duplicate login failure alerts
 - Keep posting user-confirmed through the Twitter composer
 - Keep shake-to-compose guarded by a current local Twitter session
+- Keep `make lint`, `make test`, `make build`, and `make check` available as
+  local verification gates
 - Maintain security policy for the sample
 
 Next priorities:
@@ -46,8 +48,9 @@ Contribution rules:
 
 - One PR = one focused Twitter, motion, build, or documentation change.
 - Verify shake behavior on hardware when changing motion code.
-- Run `make check` before pushing source, project, plist, asset,
-  vendored framework reference, or security documentation changes.
+- Run `make lint`, `make test`, `make build`, and `make check` before pushing
+  source, project, plist, asset, vendored framework reference, or security
+  documentation changes.
 - Keep credential placeholders empty in committed source.
 - Do not add silent account actions.
 - Keep failed or cancelled login out of the compose screen.

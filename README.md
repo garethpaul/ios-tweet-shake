@@ -27,7 +27,7 @@ Additional scan context:
 
 - Source directories: Fabric.framework, TwitterCore.framework, TwitterKit.framework, tweetshake, tweetshakeTests
 - Dependency and build manifests: none detected
-- Entry points or build surfaces: `make check`, tweetshake.xcodeproj
+- Entry points or build surfaces: `make lint`, `make test`, `make build`, `make check`, tweetshake.xcodeproj
 - Test-looking files: tweetshakeTests/tweetshakeTests.swift
 
 ## Getting Started
@@ -35,7 +35,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Python 3 for static verification with `make check`
+- Python 3 for static verification with `make lint`, `make test`, `make build`, and `make check`
 - macOS with Xcode for building Apple platform projects
 - Fabric/TwitterKit credentials from an app you control when exercising login and compose behavior
 
@@ -44,6 +44,9 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/ios-tweet-shake.git
 cd ios-tweet-shake
+make lint
+make test
+make build
 make check
 ```
 
@@ -83,12 +86,16 @@ xcodebuild -project tweetshake.xcodeproj \
 
 ## Testing and Verification
 
-- `make check` runs `scripts/check-baseline.py`, which verifies Xcode project
+- `make lint`, `make test`, `make build`, and `make check` run
+  `scripts/check-baseline.py`, which verifies Xcode project
   wiring, the committed app and test plists,
   plist/storyboard/asset files, TwitterKit login gating, login alert handling,
   shake-to-compose behavior, vendored framework references, credential helper
   guardrails, credential helper tests, the Twitter kit name guard,
   incomplete credentials, user-confirmed posting, and session boundaries.
+- The `lint`, `test`, and `build` targets intentionally alias the static
+  baseline on hosts without the legacy Xcode toolchain, keeping the standard
+  local gate commands available without claiming to replace Xcode verification.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -114,10 +121,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
-- Run `make check` before pushing changes to Swift sources, plists,
-  storyboards, assets, vendored framework references, or security docs.
+- Run `make lint`, `make test`, `make build`, and `make check` before pushing
+  changes to Swift sources, plists, storyboards, assets, vendored framework
+  references, or security docs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
 
 ## Contributing
 
