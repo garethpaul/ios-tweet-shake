@@ -47,6 +47,10 @@ class LoginViewController: UIViewController {
     }
 
     func showLoginRequiredMessage() {
+        if self.presentedViewController != nil {
+            return
+        }
+
         let alert = UIAlertController(title: "Twitter Login Required", message: "Sign in with Twitter before composing a tweet.", preferredStyle: UIAlertControllerStyle.Alert)
         let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: nil)
         alert.addAction(action)

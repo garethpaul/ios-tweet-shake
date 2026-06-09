@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Avoided stacking duplicate login failure alerts when repeated failed login
+  callbacks occur.
+
 ## 2026-06-08
 
 - Guarded Twitter login completion so the shake screen opens only after a non-nil session and no login error.
