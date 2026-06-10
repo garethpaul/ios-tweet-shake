@@ -67,7 +67,8 @@ command-line overrides.
   placeholder, trimmed local values, and the Twitter kit name boundary. Failed
   login attempts avoid stacking duplicate login failure alerts. Incomplete credentials
   such as a missing Fabric API key or missing Twitter consumer secret stay
-  covered by focused helper tests.
+  covered by focused helper tests. The credential setup message guard keeps
+  repeated setup checks from stacking duplicate labels.
 - The login layout keeps the generated Twitter login button centered and the
   credential setup message fitted from the current view bounds after layout
   changes.
@@ -95,8 +96,8 @@ xcodebuild -project tweetshake.xcodeproj \
   plist/storyboard/asset files, TwitterKit login gating, login alert handling,
   shake-to-compose behavior, vendored framework references, credential helper
   guardrails, credential helper tests, the Twitter kit name guard,
-  incomplete credentials, login layout, user-confirmed posting, and session
-  boundaries.
+  incomplete credentials, the credential setup message guard, login layout,
+  user-confirmed posting, and session boundaries.
 - The `lint`, `test`, and `build` targets intentionally alias the static
   baseline on hosts without the legacy Xcode toolchain, keeping the standard
   local gate commands available without claiming to replace Xcode verification.
@@ -131,6 +132,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
+- See `docs/plans/2026-06-10-credential-setup-message-guard.md` for the credential setup message guardrail.
 
 ## Contributing
 

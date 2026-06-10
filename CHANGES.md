@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Added a credential setup message guard so repeated missing-credential checks
+  do not stack duplicate setup labels.
+
 ## 2026-06-09
 
 - Added local `make lint`, `make test`, and `make build` gate aliases for the

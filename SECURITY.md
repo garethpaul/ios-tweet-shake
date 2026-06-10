@@ -35,7 +35,8 @@ Helpful reports include:
   machine-local configuration. The credential helper tests should keep missing,
   blank, placeholder, trimmed local values, and the Twitter kit name boundary
   covered, including incomplete credentials such as a missing Fabric API key or
-  missing Twitter consumer secret.
+  missing Twitter consumer secret. The credential setup message guard should keep
+  repeated missing-credential checks from stacking duplicate setup labels.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; do not add
   silent posting, background account actions, tweet-composer console logging, or
   hidden API calls without a separate security design.

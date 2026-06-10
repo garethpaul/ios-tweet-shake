@@ -64,6 +64,10 @@ class LoginViewController: UIViewController {
     }
 
     func showCredentialSetupMessage() {
+        if self.credentialSetupMessageLabel != nil {
+            return
+        }
+
         let messageLabel = UILabel(frame: CGRectZero)
         messageLabel.text = "Configure Twitter credentials before signing in."
         messageLabel.textAlignment = NSTextAlignment.Center
