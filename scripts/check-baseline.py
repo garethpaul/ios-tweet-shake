@@ -20,6 +20,7 @@ INCOMPLETE_CREDENTIAL_PLAN = ROOT / "docs/plans/2026-06-09-incomplete-twitter-cr
 LOGIN_LAYOUT_PLAN = ROOT / "docs/plans/2026-06-09-login-layout-recentering.md"
 MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-message-guard.md"
+HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -89,6 +90,7 @@ def main():
     failures = []
     required_files = [
         ".gitignore",
+        ".github/workflows/check.yml",
         "CHANGES.md",
         "Makefile",
         "README.md",
@@ -124,6 +126,7 @@ def main():
         "docs/plans/2026-06-09-login-layout-recentering.md",
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-10-credential-setup-message-guard.md",
+        "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -176,6 +179,8 @@ def main():
     login_layout_plan = LOGIN_LAYOUT_PLAN.read_text(encoding="utf-8") if LOGIN_LAYOUT_PLAN.exists() else ""
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     credential_setup_message_plan = CREDENTIAL_SETUP_MESSAGE_PLAN.read_text(encoding="utf-8") if CREDENTIAL_SETUP_MESSAGE_PLAN.exists() else ""
+    hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
+    workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -353,9 +358,19 @@ def main():
     require("status: completed" in credential_setup_message_plan,
             "credential setup message guard plan must be marked completed",
             failures)
+    require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
+            "hosted validation plan must be completed", failures)
+    require("permissions:\n  contents: read" in workflow and "cancel-in-progress: true" in workflow and
+            "runs-on: macos-15" in workflow and "timeout-minutes: 10" in workflow and
+            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow and
+            "run: make check" in workflow,
+            "Check workflow contract must stay pinned, read-only, and bounded", failures)
 
     if shutil.which("xcodebuild"):
-        print("xcodebuild is available; run a scheme-specific Xcode test on macOS before release.")
+        result = subprocess.run(["xcodebuild", "-list", "-project", "tweetshake.xcodeproj"], cwd=ROOT,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        require(result.returncode == 0,
+                "xcodebuild could not parse tweetshake.xcodeproj: " + result.stderr.strip(), failures)
     else:
         print("xcodebuild unavailable; static iOS baseline only.")
 

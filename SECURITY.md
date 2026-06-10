@@ -47,6 +47,9 @@ Helpful reports include:
 - Run `make check` after changing Swift sources, project metadata, plist
   plists, storyboards, assets, vendored framework references, or security
   docs.
+- The pinned macOS workflow is read-only and parses project metadata without
+  receiving credentials, accessing Twitter accounts, running simulator
+  interaction, or submitting tweets.
 - Review found authentication, token, or session-related code paths; changes in those areas should receive security-focused review before merge.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.

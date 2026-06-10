@@ -101,6 +101,10 @@ xcodebuild -project tweetshake.xcodeproj \
 - The `lint`, `test`, and `build` targets intentionally alias the static
   baseline on hosts without the legacy Xcode toolchain, keeping the standard
   local gate commands available without claiming to replace Xcode verification.
+- Pinned `macos-15` GitHub Actions runs `make check` and parses
+  `tweetshake.xcodeproj` with `xcodebuild -list`. This hosted validation does
+  not use credentials, access Twitter accounts, run simulator interaction, or
+  submit tweets.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.

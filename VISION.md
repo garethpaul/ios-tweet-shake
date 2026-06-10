@@ -39,6 +39,8 @@ Priority:
 - Keep shake-to-compose guarded by a current local Twitter session
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
+- Keep hosted project validation pinned and read-only on macOS through
+  `tweetshake.xcodeproj` parsing and `make check`
 - Maintain security policy for the sample
 
 Next priorities:
