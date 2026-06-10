@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Added SHA-256 integrity pinning for the vendored Fabric, TwitterCore, and
+  TwitterKit executables and Fabric installer.
 - Added pinned, read-only macOS hosted project validation for `make check` and
   `tweetshake.xcodeproj` parsing without credentials or account access.
 - Added a credential setup message guard so repeated missing-credential checks

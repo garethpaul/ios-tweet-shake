@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import hashlib
 import json
 import plistlib
 import re
@@ -21,6 +22,7 @@ LOGIN_LAYOUT_PLAN = ROOT / "docs/plans/2026-06-09-login-layout-recentering.md"
 MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-message-guard.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
+VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -96,6 +98,7 @@ def main():
         "README.md",
         "SECURITY.md",
         "VISION.md",
+        "VENDORED_FRAMEWORKS.sha256",
         "tweetshake.xcodeproj/project.pbxproj",
         "tweetshake.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
         "tweetshake/Info.plist",
@@ -127,6 +130,7 @@ def main():
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-10-credential-setup-message-guard.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
+        "docs/plans/2026-06-10-vendored-sdk-integrity.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -180,6 +184,7 @@ def main():
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     credential_setup_message_plan = CREDENTIAL_SETUP_MESSAGE_PLAN.read_text(encoding="utf-8") if CREDENTIAL_SETUP_MESSAGE_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
+    vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -220,6 +225,34 @@ def main():
         require(setting in project, f"Xcode project must default local credential build setting: {setting}", failures)
     for framework in ["Fabric.framework", "TwitterCore.framework", "TwitterKit.framework", "TwitterKitResources.bundle"]:
         require(framework in project, f"Xcode project must keep framework/resource reference: {framework}", failures)
+    expected_vendored_paths = {
+        "Fabric.framework/Fabric",
+        "Fabric.framework/run",
+        "TwitterCore.framework/TwitterCore",
+        "TwitterKit.framework/TwitterKit",
+    }
+    manifest_entries = {}
+    for line_number, line in enumerate(read("VENDORED_FRAMEWORKS.sha256").splitlines(), 1):
+        parts = line.split("  ", 1)
+        require(len(parts) == 2 and re.fullmatch(r"[0-9a-f]{64}", parts[0]) is not None,
+                f"VENDORED_FRAMEWORKS.sha256 line {line_number} must contain a lowercase SHA-256 digest and path",
+                failures)
+        if len(parts) != 2:
+            continue
+        digest, relative_path = parts
+        require(relative_path not in manifest_entries and not Path(relative_path).is_absolute() and ".." not in Path(relative_path).parts,
+                f"VENDORED_FRAMEWORKS.sha256 line {line_number} must contain a unique repository-relative path",
+                failures)
+        manifest_entries[relative_path] = digest
+    require(set(manifest_entries) == expected_vendored_paths,
+            "vendored framework integrity manifest must cover exactly the committed framework executables and installer",
+            failures)
+    for relative_path, expected_digest in manifest_entries.items():
+        artifact = ROOT / relative_path
+        if artifact.is_file():
+            actual_digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            require(actual_digest == expected_digest,
+                    f"vendored artifact digest mismatch: {relative_path}", failures)
     require("Main.storyboard" in project and "LaunchScreen.xib" in project and "Images.xcassets" in project,
             "Xcode project must keep storyboard, launch screen, and asset catalog references",
             failures)
@@ -360,6 +393,8 @@ def main():
             failures)
     require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
             "hosted validation plan must be completed", failures)
+    require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
+            "vendored SDK integrity plan must be completed and state its trust boundary", failures)
     require("permissions:\n  contents: read" in workflow and "cancel-in-progress: true" in workflow and
             "runs-on: macos-15" in workflow and "timeout-minutes: 10" in workflow and
             "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow and

@@ -26,6 +26,7 @@ Priority:
 
 - Preserve Twitter login and shake-triggered compose behavior
 - Keep Fabric/Twitter framework assumptions visible
+- Keep vendored framework executables and the Fabric installer SHA-256 pinned
 - Avoid committing real Twitter/Fabric credentials or signing material
 - Guard Fabric/TwitterKit startup until credential build settings are configured
 - Keep credential helper handling free of optional force unwraps
