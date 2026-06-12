@@ -36,7 +36,9 @@ class ViewController: UIViewController {
             composer.setText("I just shook my phone")
 
             composer.showWithCompletion { [weak self] (result) -> Void in
-                self?.isShowingComposer = false
+                dispatch_async(dispatch_get_main_queue()) {
+                    self?.isShowingComposer = false
+                }
             }
         }
     }

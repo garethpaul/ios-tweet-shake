@@ -1,6 +1,6 @@
 # Main-Thread Composer Completion
 
-status: planned
+status: completed
 
 ## Context
 
@@ -10,7 +10,7 @@ sample, but the closure directly resets view-controller presentation state.
 UIKit-owned state should be restored on the main thread regardless of the
 vendored callback queue.
 
-## Scope
+## Completed Scope
 
 - Dispatch composer completion state restoration to the main queue.
 - Keep weak controller capture and user-confirmed composer behavior unchanged.
@@ -28,3 +28,5 @@ vendored callback queue.
 - `python3 -m py_compile scripts/check-baseline.py`
 - vendored framework digest verification
 - `git diff --check`
+- Mutation result: replacing the main queue with a global queue was rejected by
+  `scripts/check-baseline.py`.
