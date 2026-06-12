@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MODERNIZATION_PLAN = ROOT / "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md"
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
 SESSION_GUARD_PLAN = ROOT / "docs/plans/2026-06-08-compose-session-guard.md"
 CREDENTIAL_HELPER_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-unwrap.md"
@@ -124,6 +125,7 @@ def main():
         "docs/plans/2026-06-09-login-layout-recentering.md",
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-10-credential-setup-message-guard.md",
+        "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -176,6 +178,7 @@ def main():
     login_layout_plan = LOGIN_LAYOUT_PLAN.read_text(encoding="utf-8") if LOGIN_LAYOUT_PLAN.exists() else ""
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     credential_setup_message_plan = CREDENTIAL_SETUP_MESSAGE_PLAN.read_text(encoding="utf-8") if CREDENTIAL_SETUP_MESSAGE_PLAN.exists() else ""
+    modernization_plan = MODERNIZATION_PLAN.read_text(encoding="utf-8") if MODERNIZATION_PLAN.exists() else ""
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -336,6 +339,18 @@ def main():
     require("make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record the standard local gate aliases",
             failures)
+    require("Swift 1-era" in readme and "iOS 8.3" in readme and "TwitterCore" in readme and "current SDK" in readme,
+            "README must document the legacy SDK modernization boundary",
+            failures)
+    require("Swift 1-era" in vision and "iOS 8.3" in vision and "modernization" in vision.lower(),
+            "VISION must document the legacy SDK modernization sequence",
+            failures)
+    require("retired" in security and "TwitterCore" in security and "current SDK" in security,
+            "SECURITY must identify retired SDK and current-toolchain risk",
+            failures)
+    require("legacy SDK modernization boundary" in changes,
+            "CHANGES must record the legacy SDK modernization boundary",
+            failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -352,6 +367,9 @@ def main():
             failures)
     require("status: completed" in credential_setup_message_plan,
             "credential setup message guard plan must be marked completed",
+            failures)
+    require("status: completed" in modernization_plan and "Swift 1-era" in modernization_plan and "iOS 8.3" in modernization_plan,
+            "legacy SDK modernization boundary must be completed and version-specific",
             failures)
 
     if shutil.which("xcodebuild"):

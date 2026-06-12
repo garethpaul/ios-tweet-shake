@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Documented and enforced the legacy SDK modernization boundary for the Swift
+  1-era, iOS 8.3, Fabric, TwitterCore, and TwitterKit baseline.
 - Added a credential setup message guard so repeated missing-credential checks
   do not stack duplicate setup labels.
 

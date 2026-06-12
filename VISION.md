@@ -71,6 +71,13 @@ of git, and tweet creation should remain explicit through user-controlled UI.
 The committed app plist uses build-setting placeholders so local credentials can
 be supplied without changing tracked files.
 
+## Modernization Boundary
+
+The current repository preserves a Swift 1-era, iOS 8.3 application with
+retired Fabric, TwitterCore, and TwitterKit binaries. Modernization must replace
+authentication and compose integrations before converting Swift, UIKit motion
+handling, tests, and the deployment target in independently verifiable stages.
+
 ## What We Will Not Merge (For Now)
 
 - Hardcoded Twitter/Fabric credentials
