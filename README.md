@@ -132,6 +132,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Maintenance Notes
 
+This is an archival Swift 1-era baseline with an iOS 8.3 deployment target and
+vendored Fabric, TwitterCore, and TwitterKit binaries. Those SDKs are retired,
+so the project is not expected to build unchanged with a current SDK. Follow
+`docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md` before changing the
+authentication, compose, Swift, or deployment-target layers.
+
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing
   changes to Swift sources, plists, storyboards, assets, vendored framework

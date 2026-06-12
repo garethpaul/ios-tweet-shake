@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MODERNIZATION_PLAN = ROOT / "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md"
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-tweet-shake-baseline.md"
 SESSION_GUARD_PLAN = ROOT / "docs/plans/2026-06-08-compose-session-guard.md"
 CREDENTIAL_HELPER_PLAN = ROOT / "docs/plans/2026-06-08-credential-helper-unwrap.md"
@@ -24,6 +25,26 @@ CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-m
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+EXPECTED_WORKFLOW = """name: Check
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+      - run: make check
+"""
 
 
 def require(condition, message, failures):
@@ -129,6 +150,7 @@ def main():
         "docs/plans/2026-06-09-login-layout-recentering.md",
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-10-credential-setup-message-guard.md",
+        "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-vendored-sdk-integrity.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
@@ -183,6 +205,7 @@ def main():
     login_layout_plan = LOGIN_LAYOUT_PLAN.read_text(encoding="utf-8") if LOGIN_LAYOUT_PLAN.exists() else ""
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     credential_setup_message_plan = CREDENTIAL_SETUP_MESSAGE_PLAN.read_text(encoding="utf-8") if CREDENTIAL_SETUP_MESSAGE_PLAN.exists() else ""
+    modernization_plan = MODERNIZATION_PLAN.read_text(encoding="utf-8") if MODERNIZATION_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
@@ -374,6 +397,18 @@ def main():
     require("make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record the standard local gate aliases",
             failures)
+    require("Swift 1-era" in readme and "iOS 8.3" in readme and "TwitterCore" in readme and "current SDK" in readme,
+            "README must document the legacy SDK modernization boundary",
+            failures)
+    require("Swift 1-era" in vision and "iOS 8.3" in vision and "modernization" in vision.lower(),
+            "VISION must document the legacy SDK modernization sequence",
+            failures)
+    require("retired" in security and "TwitterCore" in security and "current SDK" in security,
+            "SECURITY must identify retired SDK and current-toolchain risk",
+            failures)
+    require("legacy SDK modernization boundary" in changes,
+            "CHANGES must record the legacy SDK modernization boundary",
+            failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -391,15 +426,18 @@ def main():
     require("status: completed" in credential_setup_message_plan,
             "credential setup message guard plan must be marked completed",
             failures)
+    require("status: completed" in modernization_plan and "Swift 1-era" in modernization_plan and "iOS 8.3" in modernization_plan,
+            "legacy SDK modernization boundary must be completed and version-specific",
+            failures)
     require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
             "hosted validation plan must be completed", failures)
     require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
             "vendored SDK integrity plan must be completed and state its trust boundary", failures)
-    require("permissions:\n  contents: read" in workflow and "cancel-in-progress: true" in workflow and
-            "runs-on: macos-15" in workflow and "timeout-minutes: 10" in workflow and
-            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow and
-            "run: make check" in workflow,
-            "Check workflow contract must stay pinned, read-only, and bounded", failures)
+    workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
+    require(workflow == EXPECTED_WORKFLOW and workflow_files == [".github/workflows/check.yml"],
+            "Check workflow must remain the sole pinned, credential-free, read-only macOS gate", failures)
+    require(read(".github/CODEOWNERS").strip() == "* @garethpaul",
+            "CODEOWNERS must assign repository-wide ownership to @garethpaul", failures)
 
     if shutil.which("xcodebuild"):
         result = subprocess.run(["xcodebuild", "-list", "-project", "tweetshake.xcodeproj"], cwd=ROOT,

@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Documented and enforced the legacy SDK modernization boundary for the Swift
+  1-era, iOS 8.3, Fabric, TwitterCore, and TwitterKit baseline.
 - Added SHA-256 integrity pinning for the vendored Fabric, TwitterCore, and
   TwitterKit executables and Fabric installer.
 - Added pinned, read-only macOS hosted project validation for `make check` and
