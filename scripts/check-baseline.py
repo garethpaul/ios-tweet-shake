@@ -24,6 +24,7 @@ MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-message-guard.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
+COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-completion.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -153,6 +154,7 @@ def main():
         "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-vendored-sdk-integrity.md",
+        "docs/plans/2026-06-12-main-thread-composer-completion.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -208,6 +210,7 @@ def main():
     modernization_plan = MODERNIZATION_PLAN.read_text(encoding="utf-8") if MODERNIZATION_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
+    composer_main_thread_plan = COMPOSER_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if COMPOSER_MAIN_THREAD_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -344,6 +347,13 @@ def main():
     require("composer.setText(\"I just shook my phone\")" in shake_controller and "composer.showWithCompletion" in shake_controller,
             "shake controller must preserve user-confirmed composer behavior",
             failures)
+    composer_completion_index = shake_controller.find("composer.showWithCompletion { [weak self]")
+    main_dispatch_index = shake_controller.find("dispatch_async(dispatch_get_main_queue())", composer_completion_index)
+    composer_reset_index = shake_controller.find("self?.isShowingComposer = false", main_dispatch_index)
+    require(composer_completion_index != -1 and main_dispatch_index != -1 and composer_reset_index != -1 and
+            composer_completion_index < main_dispatch_index < composer_reset_index,
+            "composer completion must restore presentation state on the main thread",
+            failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
             failures)
@@ -433,6 +443,8 @@ def main():
             "hosted validation plan must be completed", failures)
     require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
             "vendored SDK integrity plan must be completed and state its trust boundary", failures)
+    require("status: completed" in composer_main_thread_plan and "mutation" in composer_main_thread_plan.lower(),
+            "main-thread composer completion plan must record completed mutation verification", failures)
     workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
     require(workflow == EXPECTED_WORKFLOW and workflow_files == [".github/workflows/check.yml"],
             "Check workflow must remain the sole pinned, credential-free, read-only macOS gate", failures)

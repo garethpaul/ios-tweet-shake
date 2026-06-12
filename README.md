@@ -77,6 +77,8 @@ command-line overrides.
   changes.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; shaking
   the device opens the composer instead of silently posting.
+- Composer completion restores presentation state on the main thread even if
+  the retired vendored SDK invokes its callback elsewhere.
 - The shake screen checks for a current local Twitter session before presenting
   the composer and shows a local login-required message when the session is
   missing.

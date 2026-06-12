@@ -37,6 +37,7 @@ Priority:
 - Avoid stacking duplicate login failure alerts
 - Keep login layout centered after view layout changes
 - Keep posting user-confirmed through the Twitter composer
+- Restore composer presentation state on the main thread
 - Keep shake-to-compose guarded by a current local Twitter session
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates

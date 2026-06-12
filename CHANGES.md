@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Restored composer presentation state on the main thread after the retired
+  TwitterKit completion callback.
+
 ## 2026-06-10
 
 - Documented and enforced the legacy SDK modernization boundary for the Swift

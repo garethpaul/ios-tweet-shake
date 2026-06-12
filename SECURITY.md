@@ -50,6 +50,8 @@ credentials or account data in a modernized build.
 - Tweet creation should remain user-confirmed through `TWTRComposer`; do not add
   silent posting, background account actions, tweet-composer console logging, or
   hidden API calls without a separate security design.
+- Restore composer presentation state on the main thread; the retired SDK's
+  completion queue is not trusted as a UIKit execution context.
 - The app should not enter the shake-to-compose flow unless Twitter login
   succeeds and a current local Twitter session is present, and it should skip
   TwitterKit startup when credential placeholders are unresolved. Failed login
