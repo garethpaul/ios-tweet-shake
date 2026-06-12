@@ -57,6 +57,14 @@ def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
 
 
+def markdown_section(text, heading):
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+    )
+    return match.group(1).strip() if match else ""
+
+
 def strip_swift_line_comments(text):
     return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
 
@@ -443,8 +451,42 @@ def main():
             "hosted validation plan must be completed", failures)
     require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
             "vendored SDK integrity plan must be completed and state its trust boundary", failures)
-    require("status: completed" in composer_main_thread_plan and "mutation" in composer_main_thread_plan.lower(),
-            "main-thread composer completion plan must record completed mutation verification", failures)
+    composer_main_thread_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", composer_main_thread_plan
+    )
+    composer_main_thread_work = markdown_section(
+        composer_main_thread_plan, "Work Completed"
+    )
+    composer_main_thread_verification = markdown_section(
+        composer_main_thread_plan, "Verification Completed"
+    )
+    require(composer_main_thread_status == ["completed"] and composer_main_thread_work,
+            "main-thread composer completion plan must record one completed status and completed work",
+            failures)
+    require(composer_main_thread_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_main_thread_verification),
+            "main-thread composer completion plan must record finished verification without pending markers",
+            failures)
+    for evidence in [
+        "make check",
+        "make lint",
+        "make test",
+        "make build",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "git diff --check",
+        "27395561147",
+        "27395565855",
+        "27395584932",
+        "27402323797",
+        "a004f93fa1a517557477e8da842070a2316671ff",
+        "fa6dfb98f577eded11c8bc0988514b03766b67ec",
+        "composer.showWithCompletion { [weak self]",
+        "dispatch_async(dispatch_get_main_queue())",
+        "self?.isShowingComposer = false",
+    ]:
+        require(evidence in composer_main_thread_verification,
+                f"main-thread composer completion plan must preserve verification evidence: {evidence}",
+                failures)
     workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
     require(workflow == EXPECTED_WORKFLOW and workflow_files == [".github/workflows/check.yml"],
             "Check workflow must remain the sole pinned, credential-free, read-only macOS gate", failures)
