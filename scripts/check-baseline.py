@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import hashlib
 import json
 import plistlib
 import re
@@ -21,7 +22,29 @@ INCOMPLETE_CREDENTIAL_PLAN = ROOT / "docs/plans/2026-06-09-incomplete-twitter-cr
 LOGIN_LAYOUT_PLAN = ROOT / "docs/plans/2026-06-09-login-layout-recentering.md"
 MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-message-guard.md"
+HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
+VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+EXPECTED_WORKFLOW = """name: Check
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+      - run: make check
+"""
 
 
 def require(condition, message, failures):
@@ -90,11 +113,13 @@ def main():
     failures = []
     required_files = [
         ".gitignore",
+        ".github/workflows/check.yml",
         "CHANGES.md",
         "Makefile",
         "README.md",
         "SECURITY.md",
         "VISION.md",
+        "VENDORED_FRAMEWORKS.sha256",
         "tweetshake.xcodeproj/project.pbxproj",
         "tweetshake.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
         "tweetshake/Info.plist",
@@ -126,6 +151,8 @@ def main():
         "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-10-credential-setup-message-guard.md",
         "docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md",
+        "docs/plans/2026-06-10-hosted-project-validation.md",
+        "docs/plans/2026-06-10-vendored-sdk-integrity.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -179,6 +206,9 @@ def main():
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     credential_setup_message_plan = CREDENTIAL_SETUP_MESSAGE_PLAN.read_text(encoding="utf-8") if CREDENTIAL_SETUP_MESSAGE_PLAN.exists() else ""
     modernization_plan = MODERNIZATION_PLAN.read_text(encoding="utf-8") if MODERNIZATION_PLAN.exists() else ""
+    hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
+    vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
+    workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
     kits = fabric.get("Kits", []) if isinstance(fabric, dict) else []
@@ -218,6 +248,34 @@ def main():
         require(setting in project, f"Xcode project must default local credential build setting: {setting}", failures)
     for framework in ["Fabric.framework", "TwitterCore.framework", "TwitterKit.framework", "TwitterKitResources.bundle"]:
         require(framework in project, f"Xcode project must keep framework/resource reference: {framework}", failures)
+    expected_vendored_paths = {
+        "Fabric.framework/Fabric",
+        "Fabric.framework/run",
+        "TwitterCore.framework/TwitterCore",
+        "TwitterKit.framework/TwitterKit",
+    }
+    manifest_entries = {}
+    for line_number, line in enumerate(read("VENDORED_FRAMEWORKS.sha256").splitlines(), 1):
+        parts = line.split("  ", 1)
+        require(len(parts) == 2 and re.fullmatch(r"[0-9a-f]{64}", parts[0]) is not None,
+                f"VENDORED_FRAMEWORKS.sha256 line {line_number} must contain a lowercase SHA-256 digest and path",
+                failures)
+        if len(parts) != 2:
+            continue
+        digest, relative_path = parts
+        require(relative_path not in manifest_entries and not Path(relative_path).is_absolute() and ".." not in Path(relative_path).parts,
+                f"VENDORED_FRAMEWORKS.sha256 line {line_number} must contain a unique repository-relative path",
+                failures)
+        manifest_entries[relative_path] = digest
+    require(set(manifest_entries) == expected_vendored_paths,
+            "vendored framework integrity manifest must cover exactly the committed framework executables and installer",
+            failures)
+    for relative_path, expected_digest in manifest_entries.items():
+        artifact = ROOT / relative_path
+        if artifact.is_file():
+            actual_digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            require(actual_digest == expected_digest,
+                    f"vendored artifact digest mismatch: {relative_path}", failures)
     require("Main.storyboard" in project and "LaunchScreen.xib" in project and "Images.xcassets" in project,
             "Xcode project must keep storyboard, launch screen, and asset catalog references",
             failures)
@@ -371,9 +429,21 @@ def main():
     require("status: completed" in modernization_plan and "Swift 1-era" in modernization_plan and "iOS 8.3" in modernization_plan,
             "legacy SDK modernization boundary must be completed and version-specific",
             failures)
+    require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
+            "hosted validation plan must be completed", failures)
+    require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
+            "vendored SDK integrity plan must be completed and state its trust boundary", failures)
+    workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
+    require(workflow == EXPECTED_WORKFLOW and workflow_files == [".github/workflows/check.yml"],
+            "Check workflow must remain the sole pinned, credential-free, read-only macOS gate", failures)
+    require(read(".github/CODEOWNERS").strip() == "* @garethpaul",
+            "CODEOWNERS must assign repository-wide ownership to @garethpaul", failures)
 
     if shutil.which("xcodebuild"):
-        print("xcodebuild is available; run a scheme-specific Xcode test on macOS before release.")
+        result = subprocess.run(["xcodebuild", "-list", "-project", "tweetshake.xcodeproj"], cwd=ROOT,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        require(result.returncode == 0,
+                "xcodebuild could not parse tweetshake.xcodeproj: " + result.stderr.strip(), failures)
     else:
         print("xcodebuild unavailable; static iOS baseline only.")
 

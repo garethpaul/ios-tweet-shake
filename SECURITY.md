@@ -35,6 +35,10 @@ credentials or account data in a modernized build.
   `TwitterKit.framework` binaries. Real Twitter/Fabric credentials, OAuth
   tokens, signing files, and local configuration must stay out of git, including
   committed source and app plists.
+- `VENDORED_FRAMEWORKS.sha256` pins every committed framework executable and the
+  Fabric installer. Digest verification detects unexpected repository changes;
+  it does not establish vendor provenance, patch known vulnerabilities, or make
+  the retired SDK suitable for production.
 - Keep `tweetshake/Info.plist` sanitized with build-setting placeholders. Real
   Fabric/TwitterKit credential values belong only in local build settings,
   local `.xcconfig` files, environment variables, or other untracked
@@ -53,6 +57,9 @@ credentials or account data in a modernized build.
 - Run `make check` after changing Swift sources, project metadata, plist
   plists, storyboards, assets, vendored framework references, or security
   docs.
+- The pinned macOS workflow is read-only and parses project metadata without
+  receiving credentials, accessing Twitter accounts, running simulator
+  interaction, or submitting tweets.
 - Review found authentication, token, or session-related code paths; changes in those areas should receive security-focused review before merge.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.

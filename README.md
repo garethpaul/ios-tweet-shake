@@ -60,6 +60,9 @@ command-line overrides.
 - Open `tweetshake.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 - The app uses bundled legacy `Fabric.framework`, `TwitterCore.framework`, and
   `TwitterKit.framework` binaries.
+- `VENDORED_FRAMEWORKS.sha256` pins the exact framework executables and Fabric
+  installer. `make check` recomputes every digest; this detects repository drift
+  but does not establish provenance or make the retired SDK production-safe.
 - When credential build settings are empty or unresolved placeholders, the app
   skips TwitterKit startup and shows a credential setup message on the login
   screen. The credential helper rejects missing values without force-unwrapping
@@ -101,6 +104,10 @@ xcodebuild -project tweetshake.xcodeproj \
 - The `lint`, `test`, and `build` targets intentionally alias the static
   baseline on hosts without the legacy Xcode toolchain, keeping the standard
   local gate commands available without claiming to replace Xcode verification.
+- Pinned `macos-15` GitHub Actions runs `make check` and parses
+  `tweetshake.xcodeproj` with `xcodebuild -list`. This hosted validation does
+  not use credentials, access Twitter accounts, run simulator interaction, or
+  submit tweets.
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
