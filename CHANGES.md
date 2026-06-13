@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made all Make verification aliases location-independent when invoked through
+  an absolute Makefile path.
 - Routed retired Twitter login completion navigation and failure presentation
   through the main queue while preserving weak controller capture.
 
