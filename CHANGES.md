@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Routed retired Twitter login completion navigation and failure presentation
+  through the main queue while preserving weak controller capture.
+
 ## 2026-06-12
 
 - Restored composer presentation state on the main thread after the retired

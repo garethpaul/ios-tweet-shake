@@ -52,6 +52,8 @@ credentials or account data in a modernized build.
   hidden API calls without a separate security design.
 - Restore composer presentation state on the main thread; the retired SDK's
   completion queue is not trusted as a UIKit execution context.
+- Route login completion navigation and alerts on the main thread without
+  retaining the controller.
 - The app should not enter the shake-to-compose flow unless Twitter login
   succeeds and a current local Twitter session is present, and it should skip
   TwitterKit startup when credential placeholders are unresolved. Failed login

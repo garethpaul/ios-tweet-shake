@@ -24,13 +24,13 @@ class LoginViewController: UIViewController {
         }
 
         let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
-            if session != nil && error == nil {
+            dispatch_async(dispatch_get_main_queue()) {
                 if let viewController = self {
-                    viewController.performSegueWithIdentifier("shake", sender: viewController)
-                }
-            } else {
-                if let viewController = self {
-                    viewController.showLoginRequiredMessage()
+                    if session != nil && error == nil {
+                        viewController.performSegueWithIdentifier("shake", sender: viewController)
+                    } else {
+                        viewController.showLoginRequiredMessage()
+                    }
                 }
             }
         })
