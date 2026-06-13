@@ -25,6 +25,7 @@ CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-m
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-completion.md"
+LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-completion.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -163,6 +164,7 @@ def main():
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-vendored-sdk-integrity.md",
         "docs/plans/2026-06-12-main-thread-composer-completion.md",
+        "docs/plans/2026-06-13-main-thread-login-completion.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -219,6 +221,7 @@ def main():
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
     composer_main_thread_plan = COMPOSER_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if COMPOSER_MAIN_THREAD_PLAN.exists() else ""
+    login_main_thread_plan = LOGIN_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if LOGIN_MAIN_THREAD_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -327,6 +330,18 @@ def main():
     require("showLoginRequiredMessage" in login_controller and "performSegueWithIdentifier(\"shake\"" in login_controller,
             "login controller must preserve the shake segue behind a login guard",
             failures)
+    login_completion_index = login_controller.find("TWTRLogInButton(logInCompletion: { [weak self]")
+    login_completion_end = login_controller.find("self.logInButton = logInButton", login_completion_index)
+    login_completion = login_controller[login_completion_index:login_completion_end]
+    login_dispatch_index = login_completion.find("dispatch_async(dispatch_get_main_queue())")
+    login_self_index = login_completion.find("if let viewController = self", login_dispatch_index)
+    login_success_index = login_completion.find("if session != nil && error == nil", login_self_index)
+    login_segue_index = login_completion.find('performSegueWithIdentifier("shake"', login_success_index)
+    login_alert_index = login_completion.find("showLoginRequiredMessage()", login_segue_index)
+    require(login_completion_index != -1 and login_dispatch_index != -1 and login_self_index != -1 and
+            login_completion_end != -1 and login_success_index != -1 and login_segue_index != -1 and login_alert_index != -1 and
+            login_dispatch_index < login_self_index < login_success_index < login_segue_index < login_alert_index,
+            "login completion must resolve the controller and route success or failure on the main thread", failures)
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
             failures)
@@ -427,6 +442,9 @@ def main():
     require("legacy SDK modernization boundary" in changes,
             "CHANGES must record the legacy SDK modernization boundary",
             failures)
+    require("login completion" in readme.lower() and "login completion" in security.lower() and
+            "login completion" in vision.lower() and "login completion" in changes.lower(),
+            "baseline documentation must record main-thread login completion routing", failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -451,6 +469,9 @@ def main():
             "hosted validation plan must be completed", failures)
     require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
             "vendored SDK integrity plan must be completed and state its trust boundary", failures)
+    require("status: completed" in login_main_thread_plan and "All four Make gates" in login_main_thread_plan and
+            "hostile mutations" in login_main_thread_plan.lower(),
+            "main-thread login completion plan must record completed verification", failures)
     composer_main_thread_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", composer_main_thread_plan
     )
