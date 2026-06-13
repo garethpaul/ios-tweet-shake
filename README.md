@@ -146,6 +146,8 @@ authentication, compose, Swift, or deployment-target layers.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing
   changes to Swift sources, plists, storyboards, assets, vendored framework
   references, or security docs.
+- The same gates may be invoked through an absolute Makefile path from another
+  directory; verification resolves the checker relative to the checkout.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
