@@ -81,6 +81,7 @@ command-line overrides.
   the retired vendored SDK invokes its callback elsewhere.
 - Login completion routes its segue or local failure alert on the main thread
   after resolving weak controller ownership.
+- Delayed login completions are ignored after the login controller disappears.
 - The shake screen checks for a current local Twitter session before presenting
   the composer and shows a local login-required message when the session is
   missing.

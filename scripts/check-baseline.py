@@ -27,6 +27,7 @@ VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.m
 COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-completion.md"
 LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-completion.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
+STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -167,6 +168,7 @@ def main():
         "docs/plans/2026-06-12-main-thread-composer-completion.md",
         "docs/plans/2026-06-13-main-thread-login-completion.md",
         "docs/plans/2026-06-13-location-independent-make.md",
+        "docs/plans/2026-06-14-stale-login-completion-guard.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -225,6 +227,7 @@ def main():
     composer_main_thread_plan = COMPOSER_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if COMPOSER_MAIN_THREAD_PLAN.exists() else ""
     login_main_thread_plan = LOGIN_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if LOGIN_MAIN_THREAD_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
+    stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -338,13 +341,23 @@ def main():
     login_completion = login_controller[login_completion_index:login_completion_end]
     login_dispatch_index = login_completion.find("dispatch_async(dispatch_get_main_queue())")
     login_self_index = login_completion.find("if let viewController = self", login_dispatch_index)
-    login_success_index = login_completion.find("if session != nil && error == nil", login_self_index)
+    stale_login_guard_index = login_completion.find("guard viewController.isLoginViewVisible else", login_self_index)
+    stale_login_return_index = login_completion.find("return", stale_login_guard_index)
+    login_success_index = login_completion.find("if session != nil && error == nil", stale_login_return_index)
     login_segue_index = login_completion.find('performSegueWithIdentifier("shake"', login_success_index)
     login_alert_index = login_completion.find("showLoginRequiredMessage()", login_segue_index)
     require(login_completion_index != -1 and login_dispatch_index != -1 and login_self_index != -1 and
             login_completion_end != -1 and login_success_index != -1 and login_segue_index != -1 and login_alert_index != -1 and
-            login_dispatch_index < login_self_index < login_success_index < login_segue_index < login_alert_index,
+            stale_login_guard_index != -1 and stale_login_return_index != -1 and
+            login_dispatch_index < login_self_index < stale_login_guard_index < stale_login_return_index <
+            login_success_index < login_segue_index < login_alert_index,
             "login completion must resolve the controller and route success or failure on the main thread", failures)
+    require("var isLoginViewVisible = false" in login_controller and
+            "override func viewWillAppear(animated: Bool)" in login_controller and
+            "isLoginViewVisible = true" in login_controller and
+            "override func viewDidDisappear(animated: Bool)" in login_controller and
+            "isLoginViewVisible = false" in login_controller,
+            "login controller must track visibility so stale completions cannot mutate inactive UI", failures)
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
             failures)
@@ -479,6 +492,11 @@ def main():
     require("status: completed" in login_main_thread_plan and "All four Make gates" in login_main_thread_plan and
             "hostile mutations" in login_main_thread_plan.lower(),
             "main-thread login completion plan must record completed verification", failures)
+    require("status: completed" in stale_login_completion_plan and
+            "Verification Completed" in stale_login_completion_plan and
+            "hostile mutations" in stale_login_completion_plan.lower() and
+            "stale" in stale_login_completion_plan.lower(),
+            "stale login completion plan must record completed verification", failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE
     )
