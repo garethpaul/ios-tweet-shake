@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-14
+
+- Ignored delayed Twitter login completions after the login controller
+  disappears.
+
 ## 2026-06-13
 
 - Made all Make verification aliases location-independent when invoked through

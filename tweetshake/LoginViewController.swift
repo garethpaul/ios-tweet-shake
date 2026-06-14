@@ -14,6 +14,17 @@ class LoginViewController: UIViewController {
 
     var logInButton: TWTRLogInButton?
     var credentialSetupMessageLabel: UILabel?
+    var isLoginViewVisible = false
+
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        isLoginViewVisible = true
+    }
+
+    override func viewDidDisappear(animated: Bool) {
+        super.viewDidDisappear(animated)
+        isLoginViewVisible = false
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +37,10 @@ class LoginViewController: UIViewController {
         let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
             dispatch_async(dispatch_get_main_queue()) {
                 if let viewController = self {
+                    guard viewController.isLoginViewVisible else {
+                        return
+                    }
+
                     if session != nil && error == nil {
                         viewController.performSegueWithIdentifier("shake", sender: viewController)
                     } else {

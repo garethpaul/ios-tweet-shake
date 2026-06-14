@@ -54,6 +54,7 @@ credentials or account data in a modernized build.
   completion queue is not trusted as a UIKit execution context.
 - Route login completion navigation and alerts on the main thread without
   retaining the controller.
+- Reject stale login completion UI work after the login controller disappears.
 - The app should not enter the shake-to-compose flow unless Twitter login
   succeeds and a current local Twitter session is present, and it should skip
   TwitterKit startup when credential placeholders are unresolved. Failed login

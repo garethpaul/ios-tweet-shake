@@ -1,6 +1,6 @@
 # Stale Login Completion Guard
 
-status: pending
+status: completed
 
 ## Context
 
@@ -24,11 +24,25 @@ A delayed SDK completion must not mutate UI owned by an inactive controller.
   behavior.
 - Do not claim live Twitter login or current-Xcode runtime coverage.
 
-## Planned Verification
+## Work Completed
 
-- Run all four Make gates from the repository root and `make check` through the
-  absolute Makefile path from an external directory.
-- Compile the Python checker, parse maintained metadata, and run diff,
-  artifact, and changed-line credential audits.
-- Reject isolated mutations that remove visibility tracking, stale-completion
-  rejection, main-queue ordering, completed status, or verification evidence.
+- Added explicit login-controller visibility tracking across appearance and
+  disappearance callbacks.
+- Rejected login completion UI work after the controller disappears while
+  preserving weak capture, main-queue routing, success navigation, and local
+  failure presentation.
+- Added lifecycle and callback-order contracts plus project documentation.
+
+## Verification Completed
+
+- Python checker compilation passed. Before this completion record was added,
+  the baseline reached only the expected pending-plan evidence failure.
+- `make lint`, `make test`, `make build`, and `make check` passed from the
+  repository root; `make check` also passed through the absolute Makefile path
+  from `/tmp`.
+- Six isolated hostile mutations were rejected: removing visibility state,
+  preventing the visible state from becoming true, removing the stale callback
+  guard, replacing the main-queue dispatch, reverting the plan to pending, and
+  erasing hostile-mutation verification evidence.
+- Xcode and a compatible retired Twitter runtime are unavailable on this Linux
+  host, so live login and navigation execution are not claimed.
