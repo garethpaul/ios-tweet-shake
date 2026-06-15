@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Bound Twitter login callbacks to the controller appearance that installed
+  their button so an old completion stays stale after the screen reappears.
+
 ## 2026-06-14
 
 - Ignored delayed Twitter login completions after the login controller

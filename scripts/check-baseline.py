@@ -28,6 +28,7 @@ COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-c
 LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-completion.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
+LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearance-generation.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -169,6 +170,7 @@ def main():
         "docs/plans/2026-06-13-main-thread-login-completion.md",
         "docs/plans/2026-06-13-location-independent-make.md",
         "docs/plans/2026-06-14-stale-login-completion-guard.md",
+        "docs/plans/2026-06-15-login-appearance-generation.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -228,6 +230,7 @@ def main():
     login_main_thread_plan = LOGIN_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if LOGIN_MAIN_THREAD_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
+    login_appearance_generation_plan = LOGIN_APPEARANCE_GENERATION_PLAN.read_text(encoding="utf-8") if LOGIN_APPEARANCE_GENERATION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -320,6 +323,10 @@ def main():
             "testTwitterCredentialHelperRejectsMissingFabricAPIKey" in tests and
             "testTwitterCredentialHelperRejectsMissingConsumerSecret" in tests and
             "testTwitterCredentialHelperAcceptsNamedTwitterKit" in tests and
+            "testLoginCompletionRequiresCurrentVisibleAppearance" in tests and
+            "XCTAssertTrue(controller.canHandleLoginCompletion(2)" in tests and
+            "XCTAssertFalse(controller.canHandleLoginCompletion(1)" in tests and
+            "XCTAssertFalse(controller.canHandleLoginCompletion(2)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",
@@ -341,7 +348,7 @@ def main():
     login_completion = login_controller[login_completion_index:login_completion_end]
     login_dispatch_index = login_completion.find("dispatch_async(dispatch_get_main_queue())")
     login_self_index = login_completion.find("if let viewController = self", login_dispatch_index)
-    stale_login_guard_index = login_completion.find("guard viewController.isLoginViewVisible else", login_self_index)
+    stale_login_guard_index = login_completion.find("guard viewController.canHandleLoginCompletion(generation) else", login_self_index)
     stale_login_return_index = login_completion.find("return", stale_login_guard_index)
     login_success_index = login_completion.find("if session != nil && error == nil", stale_login_return_index)
     login_segue_index = login_completion.find('performSegueWithIdentifier("shake"', login_success_index)
@@ -353,11 +360,19 @@ def main():
             login_success_index < login_segue_index < login_alert_index,
             "login completion must resolve the controller and route success or failure on the main thread", failures)
     require("var isLoginViewVisible = false" in login_controller and
+            "var loginViewGeneration = 0" in login_controller and
             "override func viewWillAppear(animated: Bool)" in login_controller and
             "isLoginViewVisible = true" in login_controller and
+            "loginViewGeneration += 1" in login_controller and
+            "installLoginButtonForCurrentAppearance()" in login_controller and
             "override func viewDidDisappear(animated: Bool)" in login_controller and
-            "isLoginViewVisible = false" in login_controller,
-            "login controller must track visibility so stale completions cannot mutate inactive UI", failures)
+            "isLoginViewVisible = false" in login_controller and
+            login_controller.count("logInButton?.removeFromSuperview()") == 2 and
+            "logInButton = nil" in login_controller and
+            "let generation = loginViewGeneration" in login_controller and
+            "func canHandleLoginCompletion(generation: Int) -> Bool" in login_controller and
+            "isLoginViewVisible && generation == loginViewGeneration" in login_controller,
+            "login controller must bind completions to the current visible appearance", failures)
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
             failures)
@@ -497,6 +512,23 @@ def main():
             "hostile mutations" in stale_login_completion_plan.lower() and
             "stale" in stale_login_completion_plan.lower(),
             "stale login completion plan must record completed verification", failures)
+    login_generation_statuses = re.findall(
+        r"^status: .+$", login_appearance_generation_plan, flags=re.MULTILINE
+    )
+    login_generation_verification = markdown_section(
+        login_appearance_generation_plan, "Verification Completed"
+    )
+    require(login_generation_statuses == ["status: completed"] and
+            "All four Make gates" in login_generation_verification and
+            "absolute Makefile path" in login_generation_verification and
+            "Six isolated hostile mutations" in login_generation_verification and
+            "git diff --check" in login_generation_verification and
+            "`xcodebuild` was unavailable" in login_generation_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_generation_verification,
+                      re.IGNORECASE) is None,
+            "login appearance generation plan must record completed status and actual local verification",
+            failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE
     )

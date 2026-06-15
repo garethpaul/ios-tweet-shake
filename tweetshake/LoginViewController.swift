@@ -15,15 +15,23 @@ class LoginViewController: UIViewController {
     var logInButton: TWTRLogInButton?
     var credentialSetupMessageLabel: UILabel?
     var isLoginViewVisible = false
+    var loginViewGeneration = 0
 
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
         isLoginViewVisible = true
+        loginViewGeneration += 1
+
+        if TweetShakeHasConfiguredTwitterCredentials() {
+            installLoginButtonForCurrentAppearance()
+        }
     }
 
     override func viewDidDisappear(animated: Bool) {
         super.viewDidDisappear(animated)
         isLoginViewVisible = false
+        logInButton?.removeFromSuperview()
+        logInButton = nil
     }
 
     override func viewDidLoad() {
@@ -34,10 +42,15 @@ class LoginViewController: UIViewController {
             return
         }
 
+    }
+
+    func installLoginButtonForCurrentAppearance() {
+        logInButton?.removeFromSuperview()
+        let generation = loginViewGeneration
         let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
             dispatch_async(dispatch_get_main_queue()) {
                 if let viewController = self {
-                    guard viewController.isLoginViewVisible else {
+                    guard viewController.canHandleLoginCompletion(generation) else {
                         return
                     }
 
@@ -52,8 +65,10 @@ class LoginViewController: UIViewController {
         self.logInButton = logInButton
         self.view.addSubview(logInButton)
         centerLoginButton()
+    }
 
-        // Do any additional setup after loading the view, typically from a nib.
+    func canHandleLoginCompletion(generation: Int) -> Bool {
+        return isLoginViewVisible && generation == loginViewGeneration
     }
 
     override func viewDidLayoutSubviews() {

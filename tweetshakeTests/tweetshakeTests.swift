@@ -88,4 +88,16 @@ class tweetshakeTests: XCTestCase {
         XCTAssertTrue(TweetShakeHasConfiguredTwitterCredentials(fabric), "Named Twitter kit credentials should be accepted when all values are configured")
     }
 
+    func testLoginCompletionRequiresCurrentVisibleAppearance() {
+        let controller = LoginViewController()
+        controller.isLoginViewVisible = true
+        controller.loginViewGeneration = 2
+
+        XCTAssertTrue(controller.canHandleLoginCompletion(2), "The current visible appearance should accept its completion")
+        XCTAssertFalse(controller.canHandleLoginCompletion(1), "A prior appearance completion should remain stale")
+
+        controller.isLoginViewVisible = false
+        XCTAssertFalse(controller.canHandleLoginCompletion(2), "A hidden controller should reject its current completion")
+    }
+
 }

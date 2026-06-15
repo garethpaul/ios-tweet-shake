@@ -1,6 +1,6 @@
 # Login Appearance Generation
 
-status: planned
+status: completed
 
 ## Context
 
@@ -35,3 +35,25 @@ that installed their login button.
   project, plist, storyboard, artifact, secret, and diff audits.
 - Reject isolated mutations that remove generation changes, captured identity,
   exact-generation rejection, focused tests, or completed evidence.
+
+## Work Completed
+
+- Recreated the Twitter login button for each visible controller appearance.
+- Bound each completion to the generation that installed its button and removed
+  the button when that appearance ended.
+- Added focused XCTest, static contracts, and changelog evidence.
+
+## Verification Completed
+
+- All four Make gates passed from the checkout; `xcodebuild` was unavailable on
+  this Linux host, so live legacy Twitter execution was not claimed.
+- `make check` passed from an external directory through the absolute Makefile path.
+- `python3 -m py_compile scripts/check-baseline.py`, vendored framework digest
+  validation, plist, storyboard, workspace, project, asset,
+  and workflow parsing, and `git diff --check` passed.
+- Six isolated hostile mutations were rejected: missing generation increment,
+  missing captured generation, weakened exact-generation match, missing button
+  teardown, missing focused test discovery, and weakened completion evidence.
+- The teardown mutation initially exposed an under-specified checker assertion;
+  the contract was tightened to require both installation and disappearance
+  cleanup call sites before all six mutations passed.
