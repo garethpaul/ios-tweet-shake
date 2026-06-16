@@ -1,6 +1,6 @@
 # Login Transition Invalidation
 
-status: planned
+status: completed
 
 ## Context
 
@@ -47,3 +47,26 @@ The repository retains retired Swift 1-era TwitterKit binaries, and this Linux
 host cannot execute Xcode or a compatible live Twitter login. Local evidence
 will cover the deterministic static boundary; hosted macOS compilation will be
 recorded separately after push.
+
+## Work Completed
+
+- Moved visibility invalidation and appearance-owned button teardown to
+  `viewWillDisappear`, closing the transition interval before the controller is
+  fully gone.
+- Added XCTest intent that accepts the active generation before disappearance
+  and rejects it immediately after transition invalidation.
+- Extended deterministic source, regression, guidance, and plan contracts.
+
+## Verification Completed
+
+- All four Make gates passed from the checkout and reported that `xcodebuild`
+  was unavailable, so this Linux host exercised the complete static baseline.
+- The absolute Makefile path passed the full gate from an external directory.
+- `python3 -m py_compile scripts/check-baseline.py`, vendored framework digest
+  validation, project/plist/storyboard/workspace/asset/workflow parsing, and
+  `git diff --check` passed.
+- Six isolated hostile mutations were rejected for late lifecycle invalidation,
+  missing visibility invalidation, missing button teardown, weakened focused
+  test coverage, maintained-guidance removal, and plan-status rollback.
+- Exact intended-file, generated-artifact, file-mode, conflict-marker, and
+  credential-pattern audits passed before commit.

@@ -39,7 +39,7 @@ Priority:
 - Keep posting user-confirmed through the Twitter composer
 - Restore composer presentation state on the main thread
 - Keep login completion navigation and alerts on the main thread
-- Ignore login completions after the login controller is no longer visible
+- Ignore login completions as soon as the login controller begins disappearing
 - Keep shake-to-compose guarded by a current local Twitter session
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates

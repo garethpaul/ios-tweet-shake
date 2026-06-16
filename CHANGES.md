@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-16
+
+- Invalidated Twitter login completion ownership when disappearance begins so
+  delayed callbacks cannot mutate UI during an animated transition.
+
 ## 2026-06-15
 
 - Bound Twitter login callbacks to the controller appearance that installed

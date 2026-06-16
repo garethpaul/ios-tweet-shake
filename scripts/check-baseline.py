@@ -29,6 +29,7 @@ LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-complet
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
 LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearance-generation.md"
+LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transition-invalidation.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -171,6 +172,7 @@ def main():
         "docs/plans/2026-06-13-location-independent-make.md",
         "docs/plans/2026-06-14-stale-login-completion-guard.md",
         "docs/plans/2026-06-15-login-appearance-generation.md",
+        "docs/plans/2026-06-16-login-transition-invalidation.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -231,6 +233,7 @@ def main():
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
     login_appearance_generation_plan = LOGIN_APPEARANCE_GENERATION_PLAN.read_text(encoding="utf-8") if LOGIN_APPEARANCE_GENERATION_PLAN.exists() else ""
+    login_transition_invalidation_plan = LOGIN_TRANSITION_INVALIDATION_PLAN.read_text(encoding="utf-8") if LOGIN_TRANSITION_INVALIDATION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -324,6 +327,9 @@ def main():
             "testTwitterCredentialHelperRejectsMissingConsumerSecret" in tests and
             "testTwitterCredentialHelperAcceptsNamedTwitterKit" in tests and
             "testLoginCompletionRequiresCurrentVisibleAppearance" in tests and
+            "testLoginCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
+            "controller.viewWillDisappear(false)" in tests and
+            'XCTAssertFalse(controller.canHandleLoginCompletion(3)' in tests and
             "XCTAssertTrue(controller.canHandleLoginCompletion(2)" in tests and
             "XCTAssertFalse(controller.canHandleLoginCompletion(1)" in tests and
             "XCTAssertFalse(controller.canHandleLoginCompletion(2)" in tests and
@@ -359,16 +365,24 @@ def main():
             login_dispatch_index < login_self_index < stale_login_guard_index < stale_login_return_index <
             login_success_index < login_segue_index < login_alert_index,
             "login completion must resolve the controller and route success or failure on the main thread", failures)
+    disappear_index = login_controller.find("override func viewWillDisappear(animated: Bool)")
+    disappear_end = login_controller.find("override func viewDidLoad()", disappear_index)
+    disappear_body = login_controller[disappear_index:disappear_end]
+    disappear_visibility_index = disappear_body.find("isLoginViewVisible = false")
+    disappear_remove_index = disappear_body.find("logInButton?.removeFromSuperview()")
+    disappear_clear_index = disappear_body.find("logInButton = nil")
     require("var isLoginViewVisible = false" in login_controller and
             "var loginViewGeneration = 0" in login_controller and
             "override func viewWillAppear(animated: Bool)" in login_controller and
             "isLoginViewVisible = true" in login_controller and
             "loginViewGeneration += 1" in login_controller and
             "installLoginButtonForCurrentAppearance()" in login_controller and
-            "override func viewDidDisappear(animated: Bool)" in login_controller and
-            "isLoginViewVisible = false" in login_controller and
+            disappear_index != -1 and disappear_end != -1 and
+            disappear_visibility_index != -1 and disappear_remove_index != -1 and
+            disappear_clear_index != -1 and
+            disappear_visibility_index < disappear_remove_index < disappear_clear_index and
+            "override func viewDidDisappear(animated: Bool)" not in login_controller and
             login_controller.count("logInButton?.removeFromSuperview()") == 2 and
-            "logInButton = nil" in login_controller and
             "let generation = loginViewGeneration" in login_controller and
             "func canHandleLoginCompletion(generation: Int) -> Bool" in login_controller and
             "isLoginViewVisible && generation == loginViewGeneration" in login_controller,
@@ -480,6 +494,11 @@ def main():
     require("login completion" in readme.lower() and "login completion" in security.lower() and
             "login completion" in vision.lower() and "login completion" in changes.lower(),
             "baseline documentation must record main-thread login completion routing", failures)
+    require("begins disappearing" in readme.lower() and
+            "begins disappearing" in security.lower() and
+            "begins disappearing" in vision.lower() and
+            "disappearance begins" in changes.lower(),
+            "baseline documentation must record transition-start login invalidation", failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -528,6 +547,23 @@ def main():
                       login_generation_verification,
                       re.IGNORECASE) is None,
             "login appearance generation plan must record completed status and actual local verification",
+            failures)
+    login_transition_statuses = re.findall(
+        r"^status: .+$", login_transition_invalidation_plan, flags=re.MULTILINE
+    )
+    login_transition_verification = markdown_section(
+        login_transition_invalidation_plan, "Verification Completed"
+    )
+    require(login_transition_statuses == ["status: completed"] and
+            "All four Make gates" in login_transition_verification and
+            "absolute Makefile path" in login_transition_verification and
+            "Six isolated hostile mutations" in login_transition_verification and
+            "git diff --check" in login_transition_verification and
+            "`xcodebuild`" in login_transition_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_transition_verification,
+                      re.IGNORECASE) is None,
+            "login transition invalidation plan must record completed status and actual local verification",
             failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE

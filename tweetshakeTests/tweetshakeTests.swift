@@ -100,4 +100,14 @@ class tweetshakeTests: XCTestCase {
         XCTAssertFalse(controller.canHandleLoginCompletion(2), "A hidden controller should reject its current completion")
     }
 
+    func testLoginCompletionIsInvalidatedWhenDisappearanceBegins() {
+        let controller = LoginViewController()
+        controller.isLoginViewVisible = true
+        controller.loginViewGeneration = 3
+
+        XCTAssertTrue(controller.canHandleLoginCompletion(3))
+        controller.viewWillDisappear(false)
+        XCTAssertFalse(controller.canHandleLoginCompletion(3), "A disappearing controller should reject its current completion")
+    }
+
 }
