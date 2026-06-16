@@ -143,4 +143,17 @@ class tweetshakeTests: XCTestCase {
         XCTAssertNotNil(controller.logInButton)
     }
 
+    func testLoginRetryRestorationRejectsStaleAppearance() {
+        let controller = LoginViewController()
+        controller.isLoginViewVisible = true
+        controller.loginViewGeneration = 6
+        controller.loginAttemptGeneration = 12
+
+        controller.restoreLoginAfterFailure(5)
+
+        XCTAssertEqual(controller.loginAttemptGeneration, 12)
+        XCTAssertNil(controller.activeLoginAttemptGeneration)
+        XCTAssertNil(controller.logInButton)
+    }
+
 }

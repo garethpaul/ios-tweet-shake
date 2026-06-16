@@ -333,6 +333,7 @@ def main():
             "testLoginCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
             "testLoginRetryRequiresSameVisibleAppearance" in tests and
             "testLoginRetryRestorationInstallsFreshAttempt" in tests and
+            "testLoginRetryRestorationRejectsStaleAppearance" in tests and
             "controller.viewWillDisappear(false)" in tests and
             "XCTAssertTrue(controller.reserveLoginCompletion(2, attemptGeneration: 7)" in tests and
             tests.count("XCTAssertFalse(controller.reserveLoginCompletion") >= 4 and
@@ -342,6 +343,7 @@ def main():
             "XCTAssertEqual(controller.loginAttemptGeneration, 11)" in tests and
             "XCTAssertEqual(controller.activeLoginAttemptGeneration, 11)" in tests and
             "XCTAssertNotNil(controller.logInButton)" in tests and
+            "XCTAssertEqual(controller.loginAttemptGeneration, 12)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",

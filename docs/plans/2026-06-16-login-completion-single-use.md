@@ -79,6 +79,8 @@ before either UI outcome.
   that alert-presentation conflict.
 - Added focused XCTest intent, deterministic source-order contracts, and
   synchronized README, security, vision, and changelog guidance.
+- Added the review follow-up regression proving a stale appearance cannot
+  reinstall a login button or advance the attempt token.
 
 ## Verification Completed
 
