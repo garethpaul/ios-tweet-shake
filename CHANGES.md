@@ -2,6 +2,8 @@
 
 ## 2026-06-16
 
+- Reserved each installed Twitter login attempt before completion UI, rejecting
+  duplicate callbacks while preserving a fresh retry after failure dismissal.
 - Invalidated Twitter login completion ownership when disappearance begins so
   delayed callbacks cannot mutate UI during an animated transition.
 

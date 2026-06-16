@@ -83,6 +83,10 @@ command-line overrides.
   after resolving weak controller ownership.
 - Delayed login completions are invalidated when the login controller begins disappearing,
   before an animated transition can finish.
+- Each installed login button owns one completion attempt. The controller
+  reserves that attempt before navigation or alert work, ignores duplicate
+  callbacks, and installs a fresh attempt only after a failed-login alert is
+  dismissed on the same visible appearance.
 - The shake screen checks for a current local Twitter session before presenting
   the composer and shows a local login-required message when the session is
   missing.

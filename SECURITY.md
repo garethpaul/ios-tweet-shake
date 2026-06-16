@@ -56,6 +56,9 @@ credentials or account data in a modernized build.
   retaining the controller.
 - Reject stale login completion UI work when the login controller begins disappearing,
   before transition-owned UI can outlive the screen.
+- Reserve each installed login attempt before performing completion UI work so
+  duplicate or contradictory callbacks cannot trigger multiple transitions.
+  Failed-login retries must receive a fresh attempt token after alert dismissal.
 - The app should not enter the shake-to-compose flow unless Twitter login
   succeeds and a current local Twitter session is present, and it should skip
   TwitterKit startup when credential placeholders are unresolved. Failed login

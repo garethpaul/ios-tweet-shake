@@ -30,6 +30,7 @@ LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independ
 STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
 LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearance-generation.md"
 LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transition-invalidation.md"
+LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completion-single-use.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -173,6 +174,7 @@ def main():
         "docs/plans/2026-06-14-stale-login-completion-guard.md",
         "docs/plans/2026-06-15-login-appearance-generation.md",
         "docs/plans/2026-06-16-login-transition-invalidation.md",
+        "docs/plans/2026-06-16-login-completion-single-use.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -234,6 +236,7 @@ def main():
     stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
     login_appearance_generation_plan = LOGIN_APPEARANCE_GENERATION_PLAN.read_text(encoding="utf-8") if LOGIN_APPEARANCE_GENERATION_PLAN.exists() else ""
     login_transition_invalidation_plan = LOGIN_TRANSITION_INVALIDATION_PLAN.read_text(encoding="utf-8") if LOGIN_TRANSITION_INVALIDATION_PLAN.exists() else ""
+    login_completion_reservation_plan = LOGIN_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if LOGIN_COMPLETION_RESERVATION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -328,11 +331,17 @@ def main():
             "testTwitterCredentialHelperAcceptsNamedTwitterKit" in tests and
             "testLoginCompletionRequiresCurrentVisibleAppearance" in tests and
             "testLoginCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
+            "testLoginRetryRequiresSameVisibleAppearance" in tests and
+            "testLoginRetryRestorationInstallsFreshAttempt" in tests and
             "controller.viewWillDisappear(false)" in tests and
-            'XCTAssertFalse(controller.canHandleLoginCompletion(3)' in tests and
-            "XCTAssertTrue(controller.canHandleLoginCompletion(2)" in tests and
-            "XCTAssertFalse(controller.canHandleLoginCompletion(1)" in tests and
-            "XCTAssertFalse(controller.canHandleLoginCompletion(2)" in tests and
+            "XCTAssertTrue(controller.reserveLoginCompletion(2, attemptGeneration: 7)" in tests and
+            tests.count("XCTAssertFalse(controller.reserveLoginCompletion") >= 4 and
+            "XCTAssertNil(controller.activeLoginAttemptGeneration)" in tests and
+            "XCTAssertTrue(controller.canRetryLogin(4))" in tests and
+            "XCTAssertFalse(controller.canRetryLogin(3))" in tests and
+            "XCTAssertEqual(controller.loginAttemptGeneration, 11)" in tests and
+            "XCTAssertEqual(controller.activeLoginAttemptGeneration, 11)" in tests and
+            "XCTAssertNotNil(controller.logInButton)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",
@@ -354,11 +363,11 @@ def main():
     login_completion = login_controller[login_completion_index:login_completion_end]
     login_dispatch_index = login_completion.find("dispatch_async(dispatch_get_main_queue())")
     login_self_index = login_completion.find("if let viewController = self", login_dispatch_index)
-    stale_login_guard_index = login_completion.find("guard viewController.canHandleLoginCompletion(generation) else", login_self_index)
+    stale_login_guard_index = login_completion.find("guard viewController.reserveLoginCompletion(", login_self_index)
     stale_login_return_index = login_completion.find("return", stale_login_guard_index)
     login_success_index = login_completion.find("if session != nil && error == nil", stale_login_return_index)
     login_segue_index = login_completion.find('performSegueWithIdentifier("shake"', login_success_index)
-    login_alert_index = login_completion.find("showLoginRequiredMessage()", login_segue_index)
+    login_alert_index = login_completion.find("showLoginRequiredMessage(appearanceGeneration)", login_segue_index)
     require(login_completion_index != -1 and login_dispatch_index != -1 and login_self_index != -1 and
             login_completion_end != -1 and login_success_index != -1 and login_segue_index != -1 and login_alert_index != -1 and
             stale_login_guard_index != -1 and stale_login_return_index != -1 and
@@ -369,23 +378,26 @@ def main():
     disappear_end = login_controller.find("override func viewDidLoad()", disappear_index)
     disappear_body = login_controller[disappear_index:disappear_end]
     disappear_visibility_index = disappear_body.find("isLoginViewVisible = false")
+    disappear_attempt_index = disappear_body.find("activeLoginAttemptGeneration = nil")
     disappear_remove_index = disappear_body.find("logInButton?.removeFromSuperview()")
     disappear_clear_index = disappear_body.find("logInButton = nil")
     require("var isLoginViewVisible = false" in login_controller and
             "var loginViewGeneration = 0" in login_controller and
+            "var loginAttemptGeneration = 0" in login_controller and
+            "var activeLoginAttemptGeneration: Int?" in login_controller and
             "override func viewWillAppear(animated: Bool)" in login_controller and
             "isLoginViewVisible = true" in login_controller and
             "loginViewGeneration += 1" in login_controller and
             "installLoginButtonForCurrentAppearance()" in login_controller and
             disappear_index != -1 and disappear_end != -1 and
-            disappear_visibility_index != -1 and disappear_remove_index != -1 and
+            disappear_visibility_index != -1 and disappear_attempt_index != -1 and disappear_remove_index != -1 and
             disappear_clear_index != -1 and
-            disappear_visibility_index < disappear_remove_index < disappear_clear_index and
+            disappear_visibility_index < disappear_attempt_index < disappear_remove_index < disappear_clear_index and
             "override func viewDidDisappear(animated: Bool)" not in login_controller and
-            login_controller.count("logInButton?.removeFromSuperview()") == 2 and
-            "let generation = loginViewGeneration" in login_controller and
-            "func canHandleLoginCompletion(generation: Int) -> Bool" in login_controller and
-            "isLoginViewVisible && generation == loginViewGeneration" in login_controller,
+            login_controller.count("logInButton?.removeFromSuperview()") == 3 and
+            "let appearanceGeneration = loginViewGeneration" in login_controller and
+            "func reserveLoginCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool" in login_controller and
+            "appearanceGeneration == loginViewGeneration" in login_controller,
             "login controller must bind completions to the current visible appearance", failures)
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
@@ -564,6 +576,82 @@ def main():
                       login_transition_verification,
                       re.IGNORECASE) is None,
             "login transition invalidation plan must record completed status and actual local verification",
+            failures)
+    reservation_function_index = login_controller.find(
+        "func reserveLoginCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool"
+    )
+    reservation_function_end = login_controller.find(
+        "func canRetryLogin(appearanceGeneration: Int) -> Bool", reservation_function_index
+    )
+    reservation_function = login_controller[reservation_function_index:reservation_function_end]
+    reservation_clear_index = reservation_function.find("activeLoginAttemptGeneration = nil")
+    reservation_remove_index = reservation_function.find("logInButton?.removeFromSuperview()", reservation_clear_index)
+    reservation_button_clear_index = reservation_function.find("logInButton = nil", reservation_remove_index)
+    reservation_success_index = reservation_function.find("return true", reservation_button_clear_index)
+    retry_restore_function_index = login_controller.find(
+        "func restoreLoginAfterFailure(appearanceGeneration: Int)"
+    )
+    retry_restore_function_end = login_controller.find(
+        "override func viewDidLayoutSubviews()", retry_restore_function_index
+    )
+    retry_restore_function = login_controller[
+        retry_restore_function_index:retry_restore_function_end
+    ]
+    retry_visibility_index = retry_restore_function.find(
+        "canRetryLogin(appearanceGeneration)"
+    )
+    retry_install_index = retry_restore_function.find(
+        "installLoginButtonForCurrentAppearance()", retry_visibility_index
+    )
+    retry_action_index = login_controller.find(
+        'let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { [weak self] _ in'
+    )
+    retry_action_restore_index = login_controller.find(
+        "self?.restoreLoginAfterFailure(appearanceGeneration)", retry_action_index
+    )
+    presented_guard_index = login_controller.find(
+        "if self.presentedViewController != nil"
+    )
+    presented_retry_index = login_controller.find(
+        "restoreLoginAfterFailure(appearanceGeneration)", presented_guard_index
+    )
+    require("loginAttemptGeneration += 1" in login_controller and
+            "activeLoginAttemptGeneration = attemptGeneration" in login_controller and
+            "activeLoginAttemptGeneration == attemptGeneration" in reservation_function and
+            reservation_clear_index != -1 and reservation_remove_index != -1 and
+            reservation_button_clear_index != -1 and reservation_success_index != -1 and
+            reservation_clear_index < reservation_remove_index < reservation_button_clear_index < reservation_success_index and
+            retry_restore_function_index != -1 and retry_visibility_index != -1 and retry_install_index != -1 and
+            retry_visibility_index < retry_install_index and
+            retry_action_index != -1 and retry_action_restore_index != -1 and
+            presented_guard_index != -1 and presented_retry_index != -1 and
+            presented_guard_index < presented_retry_index < retry_action_index < retry_action_restore_index,
+            "login completion must reserve one attempt before UI work and reinstall retries only after dismissal",
+            failures)
+    require("one completion attempt" in readme and
+            "fresh attempt" in readme and
+            "Reserve each installed login attempt" in security and
+            "fresh attempt token after alert dismissal" in security and
+            "Consume each installed login attempt" in vision and
+            "fresh retry after failure dismissal" in changes,
+            "maintained guidance must preserve single-use login reservation and retry timing",
+            failures)
+    login_reservation_statuses = re.findall(
+        r"^status: .+$", login_completion_reservation_plan, flags=re.MULTILINE
+    )
+    login_reservation_verification = markdown_section(
+        login_completion_reservation_plan, "Verification Completed"
+    )
+    require(login_reservation_statuses == ["status: completed"] and
+            "All four Make gates" in login_reservation_verification and
+            "absolute Makefile path" in login_reservation_verification and
+            "Seven isolated hostile mutations" in login_reservation_verification and
+            "git diff --check" in login_reservation_verification and
+            "`xcodebuild`" in login_reservation_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_reservation_verification,
+                      re.IGNORECASE) is None,
+            "login completion reservation plan must record completed status and actual local verification",
             failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE

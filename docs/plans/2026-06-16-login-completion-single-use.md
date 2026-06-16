@@ -1,6 +1,6 @@
 # Login Completion Reservation
 
-status: planned
+status: completed
 
 ## Context
 
@@ -67,6 +67,33 @@ before either UI outcome.
 - Do not change composer, motion, shake, or tweet behavior.
 - Do not merge or close any stacked pull request.
 
+## Work Completed
+
+- Added monotonic installed-button attempt tokens alongside the existing
+  appearance generation and reserved each matching token before completion UI.
+- Removed the consumed button immediately, kept successful attempts consumed,
+  and restored a fresh attempt after failed-login alert dismissal while the
+  same appearance remains visible.
+- The code review found that an already-presented controller could otherwise
+  strand the consumed attempt; the same guarded retry restoration now covers
+  that alert-presentation conflict.
+- Added focused XCTest intent, deterministic source-order contracts, and
+  synchronized README, security, vision, and changelog guidance.
+
 ## Verification Completed
 
-Pending implementation and validation.
+- An isolated exact-copy preflight passed All four Make gates and the canonical
+  gate through the absolute Makefile path before this plan was marked complete.
+- Seven isolated hostile mutations were rejected for active-token installation,
+  attempt identity, pre-UI consumption, consumed-button teardown,
+  alert-dismissal retry timing, focused test discovery, and plan-status
+  evidence.
+- The static baseline verified vendored framework SHA-256 pins, plist,
+  storyboard, XIB, workspace, project, asset, workflow, source-order, test, and
+  maintained-guidance contracts.
+- `git diff --check`, exact intended-file, generated-artifact, file-mode,
+  conflict-marker, and added-line credential-pattern audits passed during the
+  implementation review.
+- `xcodebuild` and a compatible retired Twitter runtime were unavailable on
+  this Linux host, so live login and native XCTest execution remain hosted
+  macOS validation boundaries.
