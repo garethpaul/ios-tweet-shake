@@ -79,6 +79,10 @@ command-line overrides.
   the device opens the composer instead of silently posting.
 - Composer completion restores presentation state on the main thread even if
   the retired vendored SDK invokes its callback elsewhere.
+- Each shake-screen appearance reserves one active composer attempt at a time.
+  Duplicate or stale callbacks cannot clear a newer composer, disappearance
+  invalidates the active attempt, and occupied presentation state blocks a new
+  composer reservation.
 - Login completion routes its segue or local failure alert on the main thread
   after resolving weak controller ownership.
 - Delayed login completions are invalidated when the login controller begins disappearing,

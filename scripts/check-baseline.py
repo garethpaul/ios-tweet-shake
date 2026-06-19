@@ -25,6 +25,7 @@ CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-m
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-completion.md"
+COMPOSER_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-19-composer-completion-single-use.md"
 LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-completion.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
@@ -231,6 +232,7 @@ def main():
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
     composer_main_thread_plan = COMPOSER_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if COMPOSER_MAIN_THREAD_PLAN.exists() else ""
+    composer_completion_reservation_plan = COMPOSER_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if COMPOSER_COMPLETION_RESERVATION_PLAN.exists() else ""
     login_main_thread_plan = LOGIN_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if LOGIN_MAIN_THREAD_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
@@ -334,6 +336,10 @@ def main():
             "testLoginRetryRequiresSameVisibleAppearance" in tests and
             "testLoginRetryRestorationInstallsFreshAttempt" in tests and
             "testLoginRetryRestorationRejectsStaleAppearance" in tests and
+            "testComposerCompletionRequiresCurrentVisibleAttempt" in tests and
+            "testStaleComposerCompletionCannotClearNewAttempt" in tests and
+            "testComposerCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
+            "testComposerPresentationReservationRequiresVisibleIdleController" in tests and
             "controller.viewWillDisappear(false)" in tests and
             "XCTAssertTrue(controller.reserveLoginCompletion(2, attemptGeneration: 7)" in tests and
             tests.count("XCTAssertFalse(controller.reserveLoginCompletion") >= 4 and
@@ -344,6 +350,10 @@ def main():
             "XCTAssertEqual(controller.activeLoginAttemptGeneration, 11)" in tests and
             "XCTAssertNotNil(controller.logInButton)" in tests and
             "XCTAssertEqual(controller.loginAttemptGeneration, 12)" in tests and
+            "XCTAssertTrue(controller.reserveComposerCompletion(2, attemptGeneration: 7)" in tests and
+            tests.count("XCTAssertFalse(controller.reserveComposerCompletion") >= 4 and
+            "XCTAssertEqual(controller.activeComposerAttemptGeneration, 11)" in tests and
+            "XCTAssertEqual(controller.beginComposerPresentation(), 1)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",
@@ -414,7 +424,10 @@ def main():
             "CGRectInset(self.view.bounds, 24.0, 0.0)" in login_controller,
             "login controller must recenter and reframe login/setup UI after layout changes",
             failures)
-    require("isShowingComposer" in shake_controller and "motion == UIEventSubtype.MotionShake && !isShowingComposer" in shake_controller,
+    require("isShowingComposer" in shake_controller and
+            "guard let attemptGeneration = beginComposerPresentation()" in shake_controller and
+            "activeComposerAttemptGeneration == nil" in shake_controller and
+            "presentedViewController == nil" in shake_controller,
             "shake controller must avoid stacking multiple composer presentations",
             failures)
     require("func hasTwitterSession() -> Bool" in shake_controller and
@@ -426,15 +439,39 @@ def main():
             "presentedViewController != nil" in shake_controller,
             "shake controller must show one local login-required message when the session is missing",
             failures)
+    require("var isShakeViewVisible = false" in shake_controller and
+            "var shakeViewGeneration = 0" in shake_controller and
+            "var composerAttemptGeneration = 0" in shake_controller and
+            "var activeComposerAttemptGeneration: Int?" in shake_controller and
+            "func beginComposerPresentation() -> Int?" in shake_controller and
+            "func reserveComposerCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool" in shake_controller,
+            "shake controller must reserve composer presentations and completions by visible appearance and attempt",
+            failures)
     require("composer.setText(\"I just shook my phone\")" in shake_controller and "composer.showWithCompletion" in shake_controller,
             "shake controller must preserve user-confirmed composer behavior",
             failures)
     composer_completion_index = shake_controller.find("composer.showWithCompletion { [weak self]")
     main_dispatch_index = shake_controller.find("dispatch_async(dispatch_get_main_queue())", composer_completion_index)
-    composer_reset_index = shake_controller.find("self?.isShowingComposer = false", main_dispatch_index)
-    require(composer_completion_index != -1 and main_dispatch_index != -1 and composer_reset_index != -1 and
-            composer_completion_index < main_dispatch_index < composer_reset_index,
+    composer_self_index = shake_controller.find("if let viewController = self", main_dispatch_index)
+    composer_reservation_index = shake_controller.find("viewController.reserveComposerCompletion(", composer_self_index)
+    require(composer_completion_index != -1 and main_dispatch_index != -1 and composer_self_index != -1 and
+            composer_reservation_index != -1 and
+            composer_completion_index < main_dispatch_index < composer_self_index < composer_reservation_index,
             "composer completion must restore presentation state on the main thread",
+            failures)
+    shake_disappear_index = shake_controller.find("override func viewWillDisappear(animated: Bool)")
+    shake_disappear_end = shake_controller.find("override func viewDidLoad()", shake_disappear_index)
+    shake_disappear_body = shake_controller[shake_disappear_index:shake_disappear_end]
+    require("override func viewWillAppear(animated: Bool)" in shake_controller and
+            "isShakeViewVisible = true" in shake_controller and
+            "shakeViewGeneration += 1" in shake_controller and
+            shake_disappear_index != -1 and shake_disappear_end != -1 and
+            "isShakeViewVisible = false" in shake_disappear_body and
+            "activeComposerAttemptGeneration = nil" in shake_disappear_body and
+            "isShowingComposer = false" in shake_disappear_body and
+            "appearanceGeneration == shakeViewGeneration" in shake_controller and
+            "activeComposerAttemptGeneration == attemptGeneration" in shake_controller,
+            "shake controller must invalidate composer ownership when disappearance begins",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
@@ -508,6 +545,11 @@ def main():
     require("login completion" in readme.lower() and "login completion" in security.lower() and
             "login completion" in vision.lower() and "login completion" in changes.lower(),
             "baseline documentation must record main-thread login completion routing", failures)
+    require("stale callbacks" in readme.lower() and
+            "stale or duplicate callback" in security.lower() and
+            "stale callbacks" in vision.lower() and
+            "duplicate callback" in changes.lower(),
+            "baseline documentation must record single-use composer completion ownership", failures)
     require("begins disappearing" in readme.lower() and
             "begins disappearing" in security.lower() and
             "begins disappearing" in vision.lower() and
@@ -690,6 +732,18 @@ def main():
     require(composer_main_thread_verification and
             not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_main_thread_verification),
             "main-thread composer completion plan must record finished verification without pending markers",
+            failures)
+    composer_reservation_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", composer_completion_reservation_plan
+    )
+    composer_reservation_verification = markdown_section(
+        composer_completion_reservation_plan, "Verification Completed"
+    )
+    require(composer_reservation_status == ["completed"] and
+            "mutation" in composer_reservation_verification.lower() and
+            "duplicate" in composer_completion_reservation_plan.lower() and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_reservation_verification),
+            "composer completion reservation plan must record completed mutation verification",
             failures)
     for evidence in [
         "make check",

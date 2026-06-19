@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-19
+
+- Reserved each shake-triggered composer presentation and completion by visible
+  appearance and attempt so a delayed duplicate callback cannot clear a newer
+  composer's presentation guard.
+- Invalidated composer ownership when the shake controller begins disappearing
+  and rejected new composer work while another controller owns presentation.
+
 ## 2026-06-16
 
 - Reserved each installed Twitter login attempt before completion UI, rejecting

@@ -12,6 +12,25 @@ import TwitterKit
 class ViewController: UIViewController {
 
     var isShowingComposer = false
+    var isShakeViewVisible = false
+    var shakeViewGeneration = 0
+    var composerAttemptGeneration = 0
+    var activeComposerAttemptGeneration: Int?
+
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        isShakeViewVisible = true
+        shakeViewGeneration += 1
+        activeComposerAttemptGeneration = nil
+        isShowingComposer = false
+    }
+
+    override func viewWillDisappear(animated: Bool) {
+        super.viewWillDisappear(animated)
+        isShakeViewVisible = false
+        activeComposerAttemptGeneration = nil
+        isShowingComposer = false
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,23 +43,56 @@ class ViewController: UIViewController {
     }
 
     override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent) {
-        if motion == UIEventSubtype.MotionShake && !isShowingComposer {
+        if motion == UIEventSubtype.MotionShake {
             if !hasTwitterSession() {
                 showLoginRequiredMessage()
                 return
             }
 
-            isShowingComposer = true
+            let appearanceGeneration = shakeViewGeneration
+            guard let attemptGeneration = beginComposerPresentation() else {
+                return
+            }
             let composer = TWTRComposer()
 
             composer.setText("I just shook my phone")
 
             composer.showWithCompletion { [weak self] (result) -> Void in
                 dispatch_async(dispatch_get_main_queue()) {
-                    self?.isShowingComposer = false
+                    if let viewController = self {
+                        viewController.reserveComposerCompletion(
+                            appearanceGeneration,
+                            attemptGeneration: attemptGeneration
+                        )
+                    }
                 }
             }
         }
+    }
+
+    func beginComposerPresentation() -> Int? {
+        guard isShakeViewVisible &&
+              activeComposerAttemptGeneration == nil &&
+              presentedViewController == nil else {
+            return nil
+        }
+
+        composerAttemptGeneration += 1
+        activeComposerAttemptGeneration = composerAttemptGeneration
+        isShowingComposer = true
+        return composerAttemptGeneration
+    }
+
+    func reserveComposerCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool {
+        guard isShakeViewVisible &&
+              appearanceGeneration == shakeViewGeneration &&
+              activeComposerAttemptGeneration == attemptGeneration else {
+            return false
+        }
+
+        activeComposerAttemptGeneration = nil
+        isShowingComposer = false
+        return true
     }
 
     func hasTwitterSession() -> Bool {

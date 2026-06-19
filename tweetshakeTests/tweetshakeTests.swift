@@ -156,4 +156,60 @@ class tweetshakeTests: XCTestCase {
         XCTAssertNil(controller.logInButton)
     }
 
+    func testComposerCompletionRequiresCurrentVisibleAttempt() {
+        let controller = ViewController()
+        controller.isShakeViewVisible = true
+        controller.shakeViewGeneration = 2
+        controller.activeComposerAttemptGeneration = 7
+        controller.isShowingComposer = true
+
+        XCTAssertFalse(controller.reserveComposerCompletion(1, attemptGeneration: 7), "A prior appearance completion should remain stale")
+        XCTAssertFalse(controller.reserveComposerCompletion(2, attemptGeneration: 6), "A prior composer attempt should remain stale")
+        XCTAssertTrue(controller.reserveComposerCompletion(2, attemptGeneration: 7), "The current visible composer should reserve its completion")
+        XCTAssertFalse(controller.reserveComposerCompletion(2, attemptGeneration: 7), "A duplicate composer callback must not reserve a consumed attempt")
+        XCTAssertNil(controller.activeComposerAttemptGeneration)
+        XCTAssertFalse(controller.isShowingComposer)
+    }
+
+    func testStaleComposerCompletionCannotClearNewAttempt() {
+        let controller = ViewController()
+        controller.isShakeViewVisible = true
+        controller.shakeViewGeneration = 3
+        controller.activeComposerAttemptGeneration = 10
+        controller.isShowingComposer = true
+
+        XCTAssertTrue(controller.reserveComposerCompletion(3, attemptGeneration: 10))
+        controller.activeComposerAttemptGeneration = 11
+        controller.isShowingComposer = true
+
+        XCTAssertFalse(controller.reserveComposerCompletion(3, attemptGeneration: 10), "A duplicate old callback must not clear a newer composer")
+        XCTAssertEqual(controller.activeComposerAttemptGeneration, 11)
+        XCTAssertTrue(controller.isShowingComposer)
+    }
+
+    func testComposerCompletionIsInvalidatedWhenDisappearanceBegins() {
+        let controller = ViewController()
+        controller.isShakeViewVisible = true
+        controller.shakeViewGeneration = 4
+        controller.activeComposerAttemptGeneration = 12
+        controller.isShowingComposer = true
+
+        controller.viewWillDisappear(false)
+
+        XCTAssertFalse(controller.reserveComposerCompletion(4, attemptGeneration: 12), "A disappearing shake controller should reject its composer completion")
+        XCTAssertNil(controller.activeComposerAttemptGeneration)
+        XCTAssertFalse(controller.isShowingComposer)
+    }
+
+    func testComposerPresentationReservationRequiresVisibleIdleController() {
+        let controller = ViewController()
+        XCTAssertNil(controller.beginComposerPresentation(), "A hidden controller must not start a composer")
+
+        controller.isShakeViewVisible = true
+        XCTAssertEqual(controller.beginComposerPresentation(), 1)
+        XCTAssertNil(controller.beginComposerPresentation(), "An active composer must block a second reservation")
+        XCTAssertEqual(controller.activeComposerAttemptGeneration, 1)
+        XCTAssertTrue(controller.isShowingComposer)
+    }
+
 }
