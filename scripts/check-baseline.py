@@ -25,6 +25,13 @@ CREDENTIAL_SETUP_MESSAGE_PLAN = ROOT / "docs/plans/2026-06-10-credential-setup-m
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 VENDORED_INTEGRITY_PLAN = ROOT / "docs/plans/2026-06-10-vendored-sdk-integrity.md"
 COMPOSER_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-12-main-thread-composer-completion.md"
+COMPOSER_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-19-composer-completion-single-use.md"
+LOGIN_MAIN_THREAD_PLAN = ROOT / "docs/plans/2026-06-13-main-thread-login-completion.md"
+LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
+STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completion-guard.md"
+LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearance-generation.md"
+LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transition-invalidation.md"
+LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completion-single-use.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -55,6 +62,14 @@ def require(condition, message, failures):
 
 def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+
+
+def markdown_section(text, heading):
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+    )
+    return match.group(1).strip() if match else ""
 
 
 def strip_swift_line_comments(text):
@@ -155,6 +170,12 @@ def main():
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-vendored-sdk-integrity.md",
         "docs/plans/2026-06-12-main-thread-composer-completion.md",
+        "docs/plans/2026-06-13-main-thread-login-completion.md",
+        "docs/plans/2026-06-13-location-independent-make.md",
+        "docs/plans/2026-06-14-stale-login-completion-guard.md",
+        "docs/plans/2026-06-15-login-appearance-generation.md",
+        "docs/plans/2026-06-16-login-transition-invalidation.md",
+        "docs/plans/2026-06-16-login-completion-single-use.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/readme-overview.svg",
     ]
@@ -211,6 +232,13 @@ def main():
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     vendored_integrity_plan = VENDORED_INTEGRITY_PLAN.read_text(encoding="utf-8") if VENDORED_INTEGRITY_PLAN.exists() else ""
     composer_main_thread_plan = COMPOSER_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if COMPOSER_MAIN_THREAD_PLAN.exists() else ""
+    composer_completion_reservation_plan = COMPOSER_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if COMPOSER_COMPLETION_RESERVATION_PLAN.exists() else ""
+    login_main_thread_plan = LOGIN_MAIN_THREAD_PLAN.read_text(encoding="utf-8") if LOGIN_MAIN_THREAD_PLAN.exists() else ""
+    location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
+    stale_login_completion_plan = STALE_LOGIN_COMPLETION_PLAN.read_text(encoding="utf-8") if STALE_LOGIN_COMPLETION_PLAN.exists() else ""
+    login_appearance_generation_plan = LOGIN_APPEARANCE_GENERATION_PLAN.read_text(encoding="utf-8") if LOGIN_APPEARANCE_GENERATION_PLAN.exists() else ""
+    login_transition_invalidation_plan = LOGIN_TRANSITION_INVALIDATION_PLAN.read_text(encoding="utf-8") if LOGIN_TRANSITION_INVALIDATION_PLAN.exists() else ""
+    login_completion_reservation_plan = LOGIN_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if LOGIN_COMPLETION_RESERVATION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -303,6 +331,29 @@ def main():
             "testTwitterCredentialHelperRejectsMissingFabricAPIKey" in tests and
             "testTwitterCredentialHelperRejectsMissingConsumerSecret" in tests and
             "testTwitterCredentialHelperAcceptsNamedTwitterKit" in tests and
+            "testLoginCompletionRequiresCurrentVisibleAppearance" in tests and
+            "testLoginCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
+            "testLoginRetryRequiresSameVisibleAppearance" in tests and
+            "testLoginRetryRestorationInstallsFreshAttempt" in tests and
+            "testLoginRetryRestorationRejectsStaleAppearance" in tests and
+            "testComposerCompletionRequiresCurrentVisibleAttempt" in tests and
+            "testStaleComposerCompletionCannotClearNewAttempt" in tests and
+            "testComposerCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
+            "testComposerPresentationReservationRequiresVisibleIdleController" in tests and
+            "controller.viewWillDisappear(false)" in tests and
+            "XCTAssertTrue(controller.reserveLoginCompletion(2, attemptGeneration: 7)" in tests and
+            tests.count("XCTAssertFalse(controller.reserveLoginCompletion") >= 4 and
+            "XCTAssertNil(controller.activeLoginAttemptGeneration)" in tests and
+            "XCTAssertTrue(controller.canRetryLogin(4))" in tests and
+            "XCTAssertFalse(controller.canRetryLogin(3))" in tests and
+            "XCTAssertEqual(controller.loginAttemptGeneration, 11)" in tests and
+            "XCTAssertEqual(controller.activeLoginAttemptGeneration, 11)" in tests and
+            "XCTAssertNotNil(controller.logInButton)" in tests and
+            "XCTAssertEqual(controller.loginAttemptGeneration, 12)" in tests and
+            "XCTAssertTrue(controller.reserveComposerCompletion(2, attemptGeneration: 7)" in tests and
+            tests.count("XCTAssertFalse(controller.reserveComposerCompletion") >= 4 and
+            "XCTAssertEqual(controller.activeComposerAttemptGeneration, 11)" in tests and
+            "XCTAssertEqual(controller.beginComposerPresentation(), 1)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",
@@ -319,6 +370,47 @@ def main():
     require("showLoginRequiredMessage" in login_controller and "performSegueWithIdentifier(\"shake\"" in login_controller,
             "login controller must preserve the shake segue behind a login guard",
             failures)
+    login_completion_index = login_controller.find("TWTRLogInButton(logInCompletion: { [weak self]")
+    login_completion_end = login_controller.find("self.logInButton = logInButton", login_completion_index)
+    login_completion = login_controller[login_completion_index:login_completion_end]
+    login_dispatch_index = login_completion.find("dispatch_async(dispatch_get_main_queue())")
+    login_self_index = login_completion.find("if let viewController = self", login_dispatch_index)
+    stale_login_guard_index = login_completion.find("guard viewController.reserveLoginCompletion(", login_self_index)
+    stale_login_return_index = login_completion.find("return", stale_login_guard_index)
+    login_success_index = login_completion.find("if session != nil && error == nil", stale_login_return_index)
+    login_segue_index = login_completion.find('performSegueWithIdentifier("shake"', login_success_index)
+    login_alert_index = login_completion.find("showLoginRequiredMessage(appearanceGeneration)", login_segue_index)
+    require(login_completion_index != -1 and login_dispatch_index != -1 and login_self_index != -1 and
+            login_completion_end != -1 and login_success_index != -1 and login_segue_index != -1 and login_alert_index != -1 and
+            stale_login_guard_index != -1 and stale_login_return_index != -1 and
+            login_dispatch_index < login_self_index < stale_login_guard_index < stale_login_return_index <
+            login_success_index < login_segue_index < login_alert_index,
+            "login completion must resolve the controller and route success or failure on the main thread", failures)
+    disappear_index = login_controller.find("override func viewWillDisappear(animated: Bool)")
+    disappear_end = login_controller.find("override func viewDidLoad()", disappear_index)
+    disappear_body = login_controller[disappear_index:disappear_end]
+    disappear_visibility_index = disappear_body.find("isLoginViewVisible = false")
+    disappear_attempt_index = disappear_body.find("activeLoginAttemptGeneration = nil")
+    disappear_remove_index = disappear_body.find("logInButton?.removeFromSuperview()")
+    disappear_clear_index = disappear_body.find("logInButton = nil")
+    require("var isLoginViewVisible = false" in login_controller and
+            "var loginViewGeneration = 0" in login_controller and
+            "var loginAttemptGeneration = 0" in login_controller and
+            "var activeLoginAttemptGeneration: Int?" in login_controller and
+            "override func viewWillAppear(animated: Bool)" in login_controller and
+            "isLoginViewVisible = true" in login_controller and
+            "loginViewGeneration += 1" in login_controller and
+            "installLoginButtonForCurrentAppearance()" in login_controller and
+            disappear_index != -1 and disappear_end != -1 and
+            disappear_visibility_index != -1 and disappear_attempt_index != -1 and disappear_remove_index != -1 and
+            disappear_clear_index != -1 and
+            disappear_visibility_index < disappear_attempt_index < disappear_remove_index < disappear_clear_index and
+            "override func viewDidDisappear(animated: Bool)" not in login_controller and
+            login_controller.count("logInButton?.removeFromSuperview()") == 3 and
+            "let appearanceGeneration = loginViewGeneration" in login_controller and
+            "func reserveLoginCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool" in login_controller and
+            "appearanceGeneration == loginViewGeneration" in login_controller,
+            "login controller must bind completions to the current visible appearance", failures)
     require("showLoginRequiredMessage" in login_controller and "presentedViewController != nil" in login_controller,
             "login controller must avoid stacking duplicate login-required alerts",
             failures)
@@ -332,7 +424,10 @@ def main():
             "CGRectInset(self.view.bounds, 24.0, 0.0)" in login_controller,
             "login controller must recenter and reframe login/setup UI after layout changes",
             failures)
-    require("isShowingComposer" in shake_controller and "motion == UIEventSubtype.MotionShake && !isShowingComposer" in shake_controller,
+    require("isShowingComposer" in shake_controller and
+            "guard let attemptGeneration = beginComposerPresentation()" in shake_controller and
+            "activeComposerAttemptGeneration == nil" in shake_controller and
+            "presentedViewController == nil" in shake_controller,
             "shake controller must avoid stacking multiple composer presentations",
             failures)
     require("func hasTwitterSession() -> Bool" in shake_controller and
@@ -344,15 +439,39 @@ def main():
             "presentedViewController != nil" in shake_controller,
             "shake controller must show one local login-required message when the session is missing",
             failures)
+    require("var isShakeViewVisible = false" in shake_controller and
+            "var shakeViewGeneration = 0" in shake_controller and
+            "var composerAttemptGeneration = 0" in shake_controller and
+            "var activeComposerAttemptGeneration: Int?" in shake_controller and
+            "func beginComposerPresentation() -> Int?" in shake_controller and
+            "func reserveComposerCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool" in shake_controller,
+            "shake controller must reserve composer presentations and completions by visible appearance and attempt",
+            failures)
     require("composer.setText(\"I just shook my phone\")" in shake_controller and "composer.showWithCompletion" in shake_controller,
             "shake controller must preserve user-confirmed composer behavior",
             failures)
     composer_completion_index = shake_controller.find("composer.showWithCompletion { [weak self]")
     main_dispatch_index = shake_controller.find("dispatch_async(dispatch_get_main_queue())", composer_completion_index)
-    composer_reset_index = shake_controller.find("self?.isShowingComposer = false", main_dispatch_index)
-    require(composer_completion_index != -1 and main_dispatch_index != -1 and composer_reset_index != -1 and
-            composer_completion_index < main_dispatch_index < composer_reset_index,
+    composer_self_index = shake_controller.find("if let viewController = self", main_dispatch_index)
+    composer_reservation_index = shake_controller.find("viewController.reserveComposerCompletion(", composer_self_index)
+    require(composer_completion_index != -1 and main_dispatch_index != -1 and composer_self_index != -1 and
+            composer_reservation_index != -1 and
+            composer_completion_index < main_dispatch_index < composer_self_index < composer_reservation_index,
             "composer completion must restore presentation state on the main thread",
+            failures)
+    shake_disappear_index = shake_controller.find("override func viewWillDisappear(animated: Bool)")
+    shake_disappear_end = shake_controller.find("override func viewDidLoad()", shake_disappear_index)
+    shake_disappear_body = shake_controller[shake_disappear_index:shake_disappear_end]
+    require("override func viewWillAppear(animated: Bool)" in shake_controller and
+            "isShakeViewVisible = true" in shake_controller and
+            "shakeViewGeneration += 1" in shake_controller and
+            shake_disappear_index != -1 and shake_disappear_end != -1 and
+            "isShakeViewVisible = false" in shake_disappear_body and
+            "activeComposerAttemptGeneration = nil" in shake_disappear_body and
+            "isShowingComposer = false" in shake_disappear_body and
+            "appearanceGeneration == shakeViewGeneration" in shake_controller and
+            "activeComposerAttemptGeneration == attemptGeneration" in shake_controller,
+            "shake controller must invalidate composer ownership when disappearance begins",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
@@ -371,8 +490,12 @@ def main():
     require("*.local.xcconfig" in gitignore and "*.secrets.xcconfig" in gitignore and ".env" in gitignore,
             ".gitignore must exclude local credential and environment files",
             failures)
-    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
-            "Makefile must expose lint, test, build, and check verification gates",
+    require(".PHONY: build check lint test" in makefile and
+            "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile and
+            "lint test build: check" in makefile and
+            'python3 "$(ROOT)/scripts/check-baseline.py"' in makefile and
+            "python3 scripts/check-baseline.py" not in makefile,
+            "Makefile must expose location-independent lint, test, build, and check verification gates",
             failures)
     require("make lint" in readme and "make test" in readme and "make build" in readme and
             "make check" in readme and "FABRIC_API_KEY" in readme and "TWITTER_CONSUMER_KEY" in readme,
@@ -419,6 +542,19 @@ def main():
     require("legacy SDK modernization boundary" in changes,
             "CHANGES must record the legacy SDK modernization boundary",
             failures)
+    require("login completion" in readme.lower() and "login completion" in security.lower() and
+            "login completion" in vision.lower() and "login completion" in changes.lower(),
+            "baseline documentation must record main-thread login completion routing", failures)
+    require("stale callbacks" in readme.lower() and
+            "stale or duplicate callback" in security.lower() and
+            "stale callbacks" in vision.lower() and
+            "duplicate callback" in changes.lower(),
+            "baseline documentation must record single-use composer completion ownership", failures)
+    require("begins disappearing" in readme.lower() and
+            "begins disappearing" in security.lower() and
+            "begins disappearing" in vision.lower() and
+            "disappearance begins" in changes.lower(),
+            "baseline documentation must record transition-start login invalidation", failures)
     require("status: completed" in baseline_plan and "status: completed" in session_guard_plan and
             "status: completed" in credential_helper_plan and "status: completed" in credential_test_plan and
             "status: completed" in login_alert_guard_plan and "status: completed" in kit_name_guard_plan,
@@ -443,8 +579,192 @@ def main():
             "hosted validation plan must be completed", failures)
     require("status: completed" in vendored_integrity_plan and "does not establish" in vendored_integrity_plan,
             "vendored SDK integrity plan must be completed and state its trust boundary", failures)
-    require("status: completed" in composer_main_thread_plan and "mutation" in composer_main_thread_plan.lower(),
-            "main-thread composer completion plan must record completed mutation verification", failures)
+    require("status: completed" in login_main_thread_plan and "All four Make gates" in login_main_thread_plan and
+            "hostile mutations" in login_main_thread_plan.lower(),
+            "main-thread login completion plan must record completed verification", failures)
+    require("status: completed" in stale_login_completion_plan and
+            "Verification Completed" in stale_login_completion_plan and
+            "hostile mutations" in stale_login_completion_plan.lower() and
+            "stale" in stale_login_completion_plan.lower(),
+            "stale login completion plan must record completed verification", failures)
+    login_generation_statuses = re.findall(
+        r"^status: .+$", login_appearance_generation_plan, flags=re.MULTILINE
+    )
+    login_generation_verification = markdown_section(
+        login_appearance_generation_plan, "Verification Completed"
+    )
+    require(login_generation_statuses == ["status: completed"] and
+            "All four Make gates" in login_generation_verification and
+            "absolute Makefile path" in login_generation_verification and
+            "Six isolated hostile mutations" in login_generation_verification and
+            "git diff --check" in login_generation_verification and
+            "`xcodebuild` was unavailable" in login_generation_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_generation_verification,
+                      re.IGNORECASE) is None,
+            "login appearance generation plan must record completed status and actual local verification",
+            failures)
+    login_transition_statuses = re.findall(
+        r"^status: .+$", login_transition_invalidation_plan, flags=re.MULTILINE
+    )
+    login_transition_verification = markdown_section(
+        login_transition_invalidation_plan, "Verification Completed"
+    )
+    require(login_transition_statuses == ["status: completed"] and
+            "All four Make gates" in login_transition_verification and
+            "absolute Makefile path" in login_transition_verification and
+            "Six isolated hostile mutations" in login_transition_verification and
+            "git diff --check" in login_transition_verification and
+            "`xcodebuild`" in login_transition_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_transition_verification,
+                      re.IGNORECASE) is None,
+            "login transition invalidation plan must record completed status and actual local verification",
+            failures)
+    reservation_function_index = login_controller.find(
+        "func reserveLoginCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool"
+    )
+    reservation_function_end = login_controller.find(
+        "func canRetryLogin(appearanceGeneration: Int) -> Bool", reservation_function_index
+    )
+    reservation_function = login_controller[reservation_function_index:reservation_function_end]
+    reservation_clear_index = reservation_function.find("activeLoginAttemptGeneration = nil")
+    reservation_remove_index = reservation_function.find("logInButton?.removeFromSuperview()", reservation_clear_index)
+    reservation_button_clear_index = reservation_function.find("logInButton = nil", reservation_remove_index)
+    reservation_success_index = reservation_function.find("return true", reservation_button_clear_index)
+    retry_restore_function_index = login_controller.find(
+        "func restoreLoginAfterFailure(appearanceGeneration: Int)"
+    )
+    retry_restore_function_end = login_controller.find(
+        "override func viewDidLayoutSubviews()", retry_restore_function_index
+    )
+    retry_restore_function = login_controller[
+        retry_restore_function_index:retry_restore_function_end
+    ]
+    retry_visibility_index = retry_restore_function.find(
+        "canRetryLogin(appearanceGeneration)"
+    )
+    retry_install_index = retry_restore_function.find(
+        "installLoginButtonForCurrentAppearance()", retry_visibility_index
+    )
+    retry_action_index = login_controller.find(
+        'let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { [weak self] _ in'
+    )
+    retry_action_restore_index = login_controller.find(
+        "self?.restoreLoginAfterFailure(appearanceGeneration)", retry_action_index
+    )
+    presented_guard_index = login_controller.find(
+        "if self.presentedViewController != nil"
+    )
+    presented_retry_index = login_controller.find(
+        "restoreLoginAfterFailure(appearanceGeneration)", presented_guard_index
+    )
+    require("loginAttemptGeneration += 1" in login_controller and
+            "activeLoginAttemptGeneration = attemptGeneration" in login_controller and
+            "activeLoginAttemptGeneration == attemptGeneration" in reservation_function and
+            reservation_clear_index != -1 and reservation_remove_index != -1 and
+            reservation_button_clear_index != -1 and reservation_success_index != -1 and
+            reservation_clear_index < reservation_remove_index < reservation_button_clear_index < reservation_success_index and
+            retry_restore_function_index != -1 and retry_visibility_index != -1 and retry_install_index != -1 and
+            retry_visibility_index < retry_install_index and
+            retry_action_index != -1 and retry_action_restore_index != -1 and
+            presented_guard_index != -1 and presented_retry_index != -1 and
+            presented_guard_index < presented_retry_index < retry_action_index < retry_action_restore_index,
+            "login completion must reserve one attempt before UI work and reinstall retries only after dismissal",
+            failures)
+    require("one completion attempt" in readme and
+            "fresh attempt" in readme and
+            "Reserve each installed login attempt" in security and
+            "fresh attempt token after alert dismissal" in security and
+            "Consume each installed login attempt" in vision and
+            "fresh retry after failure dismissal" in changes,
+            "maintained guidance must preserve single-use login reservation and retry timing",
+            failures)
+    login_reservation_statuses = re.findall(
+        r"^status: .+$", login_completion_reservation_plan, flags=re.MULTILINE
+    )
+    login_reservation_verification = markdown_section(
+        login_completion_reservation_plan, "Verification Completed"
+    )
+    require(login_reservation_statuses == ["status: completed"] and
+            "All four Make gates" in login_reservation_verification and
+            "absolute Makefile path" in login_reservation_verification and
+            "Seven isolated hostile mutations" in login_reservation_verification and
+            "git diff --check" in login_reservation_verification and
+            "`xcodebuild`" in login_reservation_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      login_reservation_verification,
+                      re.IGNORECASE) is None,
+            "login completion reservation plan must record completed status and actual local verification",
+            failures)
+    location_make_statuses = re.findall(
+        r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE
+    )
+    location_make_verification = markdown_section(
+        location_independent_make_plan, "Verification Completed"
+    )
+    require(location_make_statuses == ["status: completed"] and
+            "All four Make gates passed from the checkout" in location_make_verification and
+            "All four Make gates passed from `/tmp` through the absolute Makefile path" in location_make_verification and
+            "python3 -m py_compile scripts/check-baseline.py" in location_make_verification and
+            "project metadata parsing" in location_make_verification and
+            "vendored framework digest validation" in location_make_verification and
+            "git diff --check" in location_make_verification and
+            "`xcodebuild` was unavailable" in location_make_verification and
+            "Five isolated hostile mutations were rejected" in location_make_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b", location_make_verification, re.IGNORECASE) is None,
+            "location-independent Make plan must record completed status and actual local verification", failures)
+    require("absolute makefile path" in readme.lower() and
+            "location-independent" in changes.lower(),
+            "README and CHANGES must document location-independent Make verification", failures)
+    composer_main_thread_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", composer_main_thread_plan
+    )
+    composer_main_thread_work = markdown_section(
+        composer_main_thread_plan, "Work Completed"
+    )
+    composer_main_thread_verification = markdown_section(
+        composer_main_thread_plan, "Verification Completed"
+    )
+    require(composer_main_thread_status == ["completed"] and composer_main_thread_work,
+            "main-thread composer completion plan must record one completed status and completed work",
+            failures)
+    require(composer_main_thread_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_main_thread_verification),
+            "main-thread composer completion plan must record finished verification without pending markers",
+            failures)
+    composer_reservation_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", composer_completion_reservation_plan
+    )
+    composer_reservation_verification = markdown_section(
+        composer_completion_reservation_plan, "Verification Completed"
+    )
+    require(composer_reservation_status == ["completed"] and
+            "mutation" in composer_reservation_verification.lower() and
+            "duplicate" in composer_completion_reservation_plan.lower() and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_reservation_verification),
+            "composer completion reservation plan must record completed mutation verification",
+            failures)
+    for evidence in [
+        "make check",
+        "make lint",
+        "make test",
+        "make build",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "git diff --check",
+        "27395561147",
+        "27395565855",
+        "27395584932",
+        "27402323797",
+        "a004f93fa1a517557477e8da842070a2316671ff",
+        "fa6dfb98f577eded11c8bc0988514b03766b67ec",
+        "composer.showWithCompletion { [weak self]",
+        "dispatch_async(dispatch_get_main_queue())",
+        "self?.isShowingComposer = false",
+    ]:
+        require(evidence in composer_main_thread_verification,
+                f"main-thread composer completion plan must preserve verification evidence: {evidence}",
+                failures)
     workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
     require(workflow == EXPECTED_WORKFLOW and workflow_files == [".github/workflows/check.yml"],
             "Check workflow must remain the sole pinned, credential-free, read-only macOS gate", failures)

@@ -38,6 +38,12 @@ Priority:
 - Keep login layout centered after view layout changes
 - Keep posting user-confirmed through the Twitter composer
 - Restore composer presentation state on the main thread
+- Reserve composer presentation and completion by visible appearance and
+  single-use attempt so stale callbacks cannot unlock a newer composer
+- Keep login completion navigation and alerts on the main thread
+- Ignore login completions as soon as the login controller begins disappearing
+- Consume each installed login attempt before completion UI and issue a fresh
+  token only for an intentional retry after failed-login alert dismissal
 - Keep shake-to-compose guarded by a current local Twitter session
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates

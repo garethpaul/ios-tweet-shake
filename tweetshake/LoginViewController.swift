@@ -14,6 +14,28 @@ class LoginViewController: UIViewController {
 
     var logInButton: TWTRLogInButton?
     var credentialSetupMessageLabel: UILabel?
+    var isLoginViewVisible = false
+    var loginViewGeneration = 0
+    var loginAttemptGeneration = 0
+    var activeLoginAttemptGeneration: Int?
+
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        isLoginViewVisible = true
+        loginViewGeneration += 1
+
+        if TweetShakeHasConfiguredTwitterCredentials() {
+            installLoginButtonForCurrentAppearance()
+        }
+    }
+
+    override func viewWillDisappear(animated: Bool) {
+        super.viewWillDisappear(animated)
+        isLoginViewVisible = false
+        activeLoginAttemptGeneration = nil
+        logInButton?.removeFromSuperview()
+        logInButton = nil
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,22 +45,58 @@ class LoginViewController: UIViewController {
             return
         }
 
+    }
+
+    func installLoginButtonForCurrentAppearance() {
+        logInButton?.removeFromSuperview()
+        loginAttemptGeneration += 1
+        let appearanceGeneration = loginViewGeneration
+        let attemptGeneration = loginAttemptGeneration
+        activeLoginAttemptGeneration = attemptGeneration
         let logInButton = TWTRLogInButton(logInCompletion: { [weak self] (session: TWTRSession!, error: NSError!) in
-            if session != nil && error == nil {
+            dispatch_async(dispatch_get_main_queue()) {
                 if let viewController = self {
-                    viewController.performSegueWithIdentifier("shake", sender: viewController)
-                }
-            } else {
-                if let viewController = self {
-                    viewController.showLoginRequiredMessage()
+                    guard viewController.reserveLoginCompletion(
+                        appearanceGeneration,
+                        attemptGeneration: attemptGeneration
+                    ) else {
+                        return
+                    }
+
+                    if session != nil && error == nil {
+                        viewController.performSegueWithIdentifier("shake", sender: viewController)
+                    } else {
+                        viewController.showLoginRequiredMessage(appearanceGeneration)
+                    }
                 }
             }
         })
         self.logInButton = logInButton
         self.view.addSubview(logInButton)
         centerLoginButton()
+    }
 
-        // Do any additional setup after loading the view, typically from a nib.
+    func reserveLoginCompletion(appearanceGeneration: Int, attemptGeneration: Int) -> Bool {
+        guard isLoginViewVisible &&
+              appearanceGeneration == loginViewGeneration &&
+              activeLoginAttemptGeneration == attemptGeneration else {
+            return false
+        }
+
+        activeLoginAttemptGeneration = nil
+        logInButton?.removeFromSuperview()
+        logInButton = nil
+        return true
+    }
+
+    func canRetryLogin(appearanceGeneration: Int) -> Bool {
+        return isLoginViewVisible && appearanceGeneration == loginViewGeneration
+    }
+
+    func restoreLoginAfterFailure(appearanceGeneration: Int) {
+        if canRetryLogin(appearanceGeneration) {
+            installLoginButtonForCurrentAppearance()
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -78,13 +136,16 @@ class LoginViewController: UIViewController {
         layoutCredentialSetupMessage()
     }
 
-    func showLoginRequiredMessage() {
+    func showLoginRequiredMessage(appearanceGeneration: Int) {
         if self.presentedViewController != nil {
+            restoreLoginAfterFailure(appearanceGeneration)
             return
         }
 
         let alert = UIAlertController(title: "Twitter Login Required", message: "Sign in with Twitter before composing a tweet.", preferredStyle: UIAlertControllerStyle.Alert)
-        let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: nil)
+        let action = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { [weak self] _ in
+            self?.restoreLoginAfterFailure(appearanceGeneration)
+        })
         alert.addAction(action)
         self.presentViewController(alert, animated: true, completion: nil)
     }

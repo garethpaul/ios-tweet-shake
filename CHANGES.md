@@ -1,5 +1,37 @@
 # Changes
 
+## 2026-06-19
+
+- Reserved each shake-triggered composer presentation and completion by visible
+  appearance and attempt so a delayed duplicate callback cannot clear a newer
+  composer's presentation guard.
+- Invalidated composer ownership when the shake controller begins disappearing
+  and rejected new composer work while another controller owns presentation.
+
+## 2026-06-16
+
+- Reserved each installed Twitter login attempt before completion UI, rejecting
+  duplicate callbacks while preserving a fresh retry after failure dismissal.
+- Invalidated Twitter login completion ownership when disappearance begins so
+  delayed callbacks cannot mutate UI during an animated transition.
+
+## 2026-06-15
+
+- Bound Twitter login callbacks to the controller appearance that installed
+  their button so an old completion stays stale after the screen reappears.
+
+## 2026-06-14
+
+- Ignored delayed Twitter login completions after the login controller
+  disappears.
+
+## 2026-06-13
+
+- Made all Make verification aliases location-independent when invoked through
+  an absolute Makefile path.
+- Routed retired Twitter login completion navigation and failure presentation
+  through the main queue while preserving weak controller capture.
+
 ## 2026-06-12
 
 - Restored composer presentation state on the main thread after the retired

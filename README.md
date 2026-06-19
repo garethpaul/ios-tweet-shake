@@ -79,6 +79,18 @@ command-line overrides.
   the device opens the composer instead of silently posting.
 - Composer completion restores presentation state on the main thread even if
   the retired vendored SDK invokes its callback elsewhere.
+- Each shake-screen appearance reserves one active composer attempt at a time.
+  Duplicate or stale callbacks cannot clear a newer composer, disappearance
+  invalidates the active attempt, and occupied presentation state blocks a new
+  composer reservation.
+- Login completion routes its segue or local failure alert on the main thread
+  after resolving weak controller ownership.
+- Delayed login completions are invalidated when the login controller begins disappearing,
+  before an animated transition can finish.
+- Each installed login button owns one completion attempt. The controller
+  reserves that attempt before navigation or alert work, ignores duplicate
+  callbacks, and installs a fresh attempt only after a failed-login alert is
+  dismissed on the same visible appearance.
 - The shake screen checks for a current local Twitter session before presenting
   the composer and shows a local login-required message when the session is
   missing.
@@ -144,6 +156,8 @@ authentication, compose, Swift, or deployment-target layers.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing
   changes to Swift sources, plists, storyboards, assets, vendored framework
   references, or security docs.
+- The same gates may be invoked through an absolute Makefile path from another
+  directory; verification resolves the checker relative to the checkout.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.

@@ -52,6 +52,16 @@ credentials or account data in a modernized build.
   hidden API calls without a separate security design.
 - Restore composer presentation state on the main thread; the retired SDK's
   completion queue is not trusted as a UIKit execution context.
+- Reserve composer completion by visible shake-screen appearance and attempt.
+  A stale or duplicate callback must not clear a newer composer guard, and a
+  controller that is disappearing or already presenting UI must not start one.
+- Route login completion navigation and alerts on the main thread without
+  retaining the controller.
+- Reject stale login completion UI work when the login controller begins disappearing,
+  before transition-owned UI can outlive the screen.
+- Reserve each installed login attempt before performing completion UI work so
+  duplicate or contradictory callbacks cannot trigger multiple transitions.
+  Failed-login retries must receive a fresh attempt token after alert dismissal.
 - The app should not enter the shake-to-compose flow unless Twitter login
   succeeds and a current local Twitter session is present, and it should skip
   TwitterKit startup when credential placeholders are unresolved. Failed login
