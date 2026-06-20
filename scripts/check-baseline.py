@@ -491,7 +491,7 @@ def main():
             ".gitignore must exclude local credential and environment files",
             failures)
     require(".PHONY: build check lint test" in makefile and
-            "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile and
+            "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile and
             "lint test build: check" in makefile and
             'python3 "$(ROOT)/scripts/check-baseline.py"' in makefile and
             "python3 scripts/check-baseline.py" not in makefile,
