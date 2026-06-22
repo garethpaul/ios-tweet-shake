@@ -57,7 +57,8 @@ command-line overrides.
 
 ## Running or Using the Project
 
-- Open `tweetshake.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
+- Open `tweetshake.xcodeproj` in Xcode, choose the generated `tweetshake` scheme,
+  and run it on a matching simulator or device.
 - The app uses bundled legacy `Fabric.framework`, `TwitterCore.framework`, and
   `TwitterKit.framework` binaries.
 - `VENDORED_FRAMEWORKS.sha256` pins the exact framework executables and Fabric
@@ -121,8 +122,12 @@ xcodebuild -project tweetshake.xcodeproj \
 - Pinned `macos-15` GitHub Actions runs `make check` and parses
   `tweetshake.xcodeproj` with `xcodebuild -list`. This hosted validation does
   not use credentials, access Twitter accounts, run simulator interaction, or
-  submit tweets.
-- Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
+  submit tweets. CI performs static checks and project parsing only; it does not
+  compile the Swift application or run the 15 XCTest methods.
+- With the matching historical Xcode and SDK, use the generated `tweetshake`
+  scheme's Test action or `xcodebuild test` with an appropriate destination.
+  The project contains the `tweetshake` app target and the `tweetshakeTests`
+  unit-test target.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -152,7 +157,10 @@ so the project is not expected to build unchanged with a current SDK. Follow
 `docs/plans/2026-06-10-legacy-sdk-modernization-boundary.md` before changing the
 authentication, compose, Swift, or deployment-target layers.
 
-- This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
+- This Apple platform sample keeps its legacy framework dependencies vendored
+  directly in this repository; no dependency manifest is checked in. Xcode,
+  Swift, and deployment target versions may need to match the original project
+  era.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing
   changes to Swift sources, plists, storyboards, assets, vendored framework
   references, or security docs.
