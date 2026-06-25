@@ -1,5 +1,59 @@
 # Changes
 
+## 2026-06-25 06:17 - P1 - Scope shake responder ownership
+
+### Summary
+Made the visible shake controller explicitly own first-responder motion delivery
+and release it before disappearance.
+
+### Work completed
+- Added Swift 1-era first-responder eligibility to the shake controller.
+- Acquired responder ownership after appearance in the active hierarchy.
+- Resigned before visibility and composer ownership invalidation.
+- Added focused XCTest, mutation-sensitive static contracts, and documentation.
+- Hardened lifecycle parsing after a commented-out acquisition mutation exposed
+  a false pass; line and nested block comments are now excluded safely.
+
+### Threads
+- Started: none — work completed directly in the current repository.
+- Continued: none.
+- Stopped: none.
+
+### Files changed
+- `tweetshake/ViewController.swift` — scopes motion responder ownership.
+- `tweetshakeTests/tweetshakeTests.swift` — covers responder eligibility.
+- `scripts/check-baseline.py` — enforces acquisition, resignation, and order.
+- Documentation and plan files — record lifecycle and hardware boundaries.
+
+### Validation
+- `python3 scripts/check-baseline.py` — failed before implementation on the
+  missing lifecycle contract and passed afterward.
+- `/usr/bin/make lint`, `/usr/bin/make test`, `/usr/bin/make build`, and
+  `/usr/bin/make check` — passed the complete static baseline.
+- Six isolated hostile mutations removing eligibility, acquisition,
+  resignation, correct teardown order, or hiding acquisition in line/block
+  comments were rejected.
+- String-aware nested Swift comment stripping, Python compilation, and
+  `git diff --check` — passed.
+- Codex review — clean with no actionable findings; parallel `make check`
+  passed.
+- Hosted push baseline run `28172964648`, pull-request baseline run
+  `28172968567`, and CodeQL run `28172966032` passed on reviewed head
+  `5e9a32f5e760ec214473a84369f7d8e0f8f74aa0`.
+
+### Bugs / findings
+- P1: `motionEnded` depended on implicit responder-chain behavior even though
+  UIKit initially delivers motion events to the first responder and responders
+  reject first-responder ownership by default.
+
+### Blockers
+- The Swift 1-era app and retired vendored SDKs are source-review only under the
+  current environment; physical shake delivery requires historical hardware
+  and toolchain validation.
+
+### Next action
+- Revalidate the evidence-only amendment, then merge PR #13 on exact green head.
+
 ## 2026-06-19
 
 - Reserved each shake-triggered composer presentation and completion by visible

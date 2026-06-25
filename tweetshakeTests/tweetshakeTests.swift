@@ -12,6 +12,12 @@ import XCTest
 
 class tweetshakeTests: XCTestCase {
 
+    func testShakeControllerCanBecomeFirstResponder() {
+        let controller = ViewController()
+
+        XCTAssertTrue(controller.canBecomeFirstResponder(), "The visible shake controller must be eligible for initial motion delivery")
+    }
+
     func testCredentialHelperRejectsMissingAndPlaceholderValues() {
         XCTAssertFalse(TweetShakeHasConfiguredCredentialValue(nil), "Missing credentials should be rejected")
         XCTAssertFalse(TweetShakeHasConfiguredCredentialValue("  "), "Blank credentials should be rejected")

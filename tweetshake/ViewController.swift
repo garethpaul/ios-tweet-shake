@@ -17,6 +17,10 @@ class ViewController: UIViewController {
     var composerAttemptGeneration = 0
     var activeComposerAttemptGeneration: Int?
 
+    override func canBecomeFirstResponder() -> Bool {
+        return true
+    }
+
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
         isShakeViewVisible = true
@@ -25,8 +29,14 @@ class ViewController: UIViewController {
         isShowingComposer = false
     }
 
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated)
+        self.becomeFirstResponder()
+    }
+
     override func viewWillDisappear(animated: Bool) {
         super.viewWillDisappear(animated)
+        self.resignFirstResponder()
         isShakeViewVisible = false
         activeComposerAttemptGeneration = nil
         isShowingComposer = false
