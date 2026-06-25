@@ -49,6 +49,7 @@ user-confirmed Twitter composer after a shake gesture.
 - The checked-in Fabric/TwitterKit values must stay as build-setting placeholders, not real credentials.
 - Do not commit real credentials to source or app plists. Do not add silent posting, background account actions, session bypasses, or tweet-composer console logging.
 - Keep composer completion state restoration on the main thread without modifying vendored framework binaries.
+- Keep shake first-responder ownership scoped to the visible shake controller lifecycle.
 - This is an archival Apple platform sample. The Swift 1-era syntax, iOS 8.3
   target, and vendored Fabric/TwitterKit binaries require a historical toolchain.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plists, storyboards, assets, vendored framework references, or security docs.

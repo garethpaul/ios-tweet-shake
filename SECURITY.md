@@ -53,6 +53,8 @@ credentials or account data in a modernized build.
 - Restore composer presentation state on the main thread; the retired SDK's
   completion queue is not trusted as a UIKit execution context.
 - Reserve composer completion by visible shake-screen appearance and attempt.
+- Keep first-responder motion ownership scoped to the visible shake controller;
+  acquire only after appearance and resign before disappearance.
   A stale or duplicate callback must not clear a newer composer guard, and a
   controller that is disappearing or already presenting UI must not start one.
 - Route login completion navigation and alerts on the main thread without

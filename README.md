@@ -95,6 +95,9 @@ command-line overrides.
 - The shake screen checks for a current local Twitter session before presenting
   the composer and shows a local login-required message when the session is
   missing.
+- The visible shake controller explicitly acquires first-responder status after
+  appearing and resigns before disappearing, keeping physical motion delivery
+  scoped to the screen that can start the user-confirmed composer.
 
 Example command-line credential override:
 
@@ -170,6 +173,7 @@ authentication, compose, Swift, or deployment-target layers.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
 - See `docs/plans/2026-06-10-credential-setup-message-guard.md` for the credential setup message guardrail.
+- See `docs/plans/2026-06-25-shake-first-responder-lifecycle.md` for visible-screen motion responder ownership.
 
 ## Contributing
 

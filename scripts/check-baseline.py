@@ -32,6 +32,7 @@ STALE_LOGIN_COMPLETION_PLAN = ROOT / "docs/plans/2026-06-14-stale-login-completi
 LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearance-generation.md"
 LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transition-invalidation.md"
 LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completion-single-use.md"
+SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-25-shake-first-responder-lifecycle.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -74,6 +75,65 @@ def markdown_section(text, heading):
 
 def strip_swift_line_comments(text):
     return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+
+
+def strip_swift_comments(text):
+    result = []
+    index = 0
+    block_depth = 0
+    in_string = False
+    escaped = False
+
+    while index < len(text):
+        character = text[index]
+        next_character = text[index + 1] if index + 1 < len(text) else ""
+
+        if block_depth:
+            if character == "/" and next_character == "*":
+                block_depth += 1
+                index += 2
+                continue
+            if character == "*" and next_character == "/":
+                block_depth -= 1
+                index += 2
+                continue
+            if character == "\n":
+                result.append(character)
+            index += 1
+            continue
+
+        if in_string:
+            result.append(character)
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            index += 1
+            continue
+
+        if character == '"':
+            in_string = True
+            result.append(character)
+            index += 1
+            continue
+        if character == "/" and next_character == "/":
+            newline = text.find("\n", index + 2)
+            if newline == -1:
+                break
+            result.append("\n")
+            index = newline + 1
+            continue
+        if character == "/" and next_character == "*":
+            block_depth = 1
+            index += 2
+            continue
+
+        result.append(character)
+        index += 1
+
+    return "".join(result)
 
 
 def parse_xml(relative_path, failures):
@@ -177,6 +237,7 @@ def main():
         "docs/plans/2026-06-16-login-transition-invalidation.md",
         "docs/plans/2026-06-16-login-completion-single-use.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
+        "docs/plans/2026-06-25-shake-first-responder-lifecycle.md",
         "docs/readme-overview.svg",
     ]
 
@@ -210,6 +271,7 @@ def main():
     app_delegate = read("tweetshake/AppDelegate.swift")
     login_controller = read("tweetshake/LoginViewController.swift")
     shake_controller = read("tweetshake/ViewController.swift")
+    active_shake_controller = strip_swift_comments(shake_controller)
     swift_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
                               for path in sorted((ROOT / "tweetshake").glob("*.swift")))
     readme = read("README.md")
@@ -239,6 +301,7 @@ def main():
     login_appearance_generation_plan = LOGIN_APPEARANCE_GENERATION_PLAN.read_text(encoding="utf-8") if LOGIN_APPEARANCE_GENERATION_PLAN.exists() else ""
     login_transition_invalidation_plan = LOGIN_TRANSITION_INVALIDATION_PLAN.read_text(encoding="utf-8") if LOGIN_TRANSITION_INVALIDATION_PLAN.exists() else ""
     login_completion_reservation_plan = LOGIN_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if LOGIN_COMPLETION_RESERVATION_PLAN.exists() else ""
+    shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -459,9 +522,16 @@ def main():
             composer_completion_index < main_dispatch_index < composer_self_index < composer_reservation_index,
             "composer completion must restore presentation state on the main thread",
             failures)
-    shake_disappear_index = shake_controller.find("override func viewWillDisappear(animated: Bool)")
-    shake_disappear_end = shake_controller.find("override func viewDidLoad()", shake_disappear_index)
-    shake_disappear_body = shake_controller[shake_disappear_index:shake_disappear_end]
+    shake_disappear_index = active_shake_controller.find("override func viewWillDisappear(animated: Bool)")
+    shake_disappear_end = active_shake_controller.find("override func viewDidLoad()", shake_disappear_index)
+    shake_disappear_body = active_shake_controller[shake_disappear_index:shake_disappear_end]
+    shake_appear_index = active_shake_controller.find("override func viewDidAppear(animated: Bool)")
+    shake_appear_end = active_shake_controller.find("override func viewWillDisappear(animated: Bool)", shake_appear_index)
+    shake_appear_body = active_shake_controller[shake_appear_index:shake_appear_end]
+    responder_match = re.search(
+        r"override func canBecomeFirstResponder\(\) -> Bool\s*\{\s*return true\s*\}",
+        active_shake_controller,
+    )
     require("override func viewWillAppear(animated: Bool)" in shake_controller and
             "isShakeViewVisible = true" in shake_controller and
             "shakeViewGeneration += 1" in shake_controller and
@@ -472,6 +542,16 @@ def main():
             "appearanceGeneration == shakeViewGeneration" in shake_controller and
             "activeComposerAttemptGeneration == attemptGeneration" in shake_controller,
             "shake controller must invalidate composer ownership when disappearance begins",
+            failures)
+    require(responder_match is not None and
+            shake_appear_index != -1 and shake_appear_end != -1 and
+            "super.viewDidAppear(animated)" in shake_appear_body and
+            shake_appear_body.count("self.becomeFirstResponder()") == 1 and
+            shake_disappear_body.count("self.resignFirstResponder()") == 1 and
+            shake_disappear_body.find("self.resignFirstResponder()") < shake_disappear_body.find("isShakeViewVisible = false") and
+            "func testShakeControllerCanBecomeFirstResponder()" in tests and
+            "XCTAssertTrue(controller.canBecomeFirstResponder()," in tests,
+            "shake controller must own first-responder motion delivery only while visible",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
@@ -744,6 +824,13 @@ def main():
             "duplicate" in composer_completion_reservation_plan.lower() and
             not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", composer_reservation_verification),
             "composer completion reservation plan must record completed mutation verification",
+            failures)
+    require("status: completed" in shake_responder_plan and
+            "canBecomeFirstResponder" in shake_responder_plan and
+            "viewDidAppear" in shake_responder_plan and
+            "viewWillDisappear" in shake_responder_plan and
+            "hostile mutations" in shake_responder_plan.lower(),
+            "shake first-responder lifecycle plan must record completed mutation verification",
             failures)
     for evidence in [
         "make check",
