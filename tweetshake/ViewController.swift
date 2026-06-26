@@ -53,28 +53,31 @@ class ViewController: UIViewController {
     }
 
     override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent) {
-        if motion == UIEventSubtype.MotionShake {
-            if !hasTwitterSession() {
-                showLoginRequiredMessage()
-                return
-            }
+        if motion != UIEventSubtype.MotionShake {
+            super.motionEnded(motion, withEvent: event)
+            return
+        }
 
-            let appearanceGeneration = shakeViewGeneration
-            guard let attemptGeneration = beginComposerPresentation() else {
-                return
-            }
-            let composer = TWTRComposer()
+        if !hasTwitterSession() {
+            showLoginRequiredMessage()
+            return
+        }
 
-            composer.setText("I just shook my phone")
+        let appearanceGeneration = shakeViewGeneration
+        guard let attemptGeneration = beginComposerPresentation() else {
+            return
+        }
+        let composer = TWTRComposer()
 
-            composer.showWithCompletion { [weak self] (result) -> Void in
-                dispatch_async(dispatch_get_main_queue()) {
-                    if let viewController = self {
-                        viewController.reserveComposerCompletion(
-                            appearanceGeneration,
-                            attemptGeneration: attemptGeneration
-                        )
-                    }
+        composer.setText("I just shook my phone")
+
+        composer.showWithCompletion { [weak self] (result) -> Void in
+            dispatch_async(dispatch_get_main_queue()) {
+                if let viewController = self {
+                    viewController.reserveComposerCompletion(
+                        appearanceGeneration,
+                        attemptGeneration: attemptGeneration
+                    )
                 }
             }
         }

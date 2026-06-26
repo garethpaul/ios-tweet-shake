@@ -1,5 +1,33 @@
 # Changes
 
+## 2026-06-26 - P2 - Forward unhandled motion events
+
+### Summary
+Kept shake-to-compose behavior local while forwarding every other motion subtype
+through UIKit's responder chain.
+
+### Work completed
+- Added a red-first static contract for non-shake responder forwarding.
+- Called the inherited `motionEnded` implementation exactly once for non-shake
+  events and returned before session or composer work.
+- Preserved shake session gating, composer text, user confirmation, and
+  generation-owned completion behavior.
+- Documented the responder-chain boundary and verification plan.
+
+### Files changed
+- `tweetshake/ViewController.swift` — forwards unhandled motion subtypes.
+- `scripts/check-baseline.py` — enforces forwarding and ordering.
+- Documentation and plan files — record the behavior and scope.
+
+### Bugs / findings
+- P2: the shake override consumed all completed motion events, preventing the
+  default `UIResponder` implementation from forwarding non-shake events.
+
+### Blockers
+- Current Xcode cannot compile this Swift 1-era source; the static hosted gate
+  and project parsing remain authoritative, with hardware behavior requiring a
+  compatible historical toolchain.
+
 ## 2026-06-25 06:17 - P1 - Scope shake responder ownership
 
 ### Summary

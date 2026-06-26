@@ -26,6 +26,7 @@ Priority:
 
 - Preserve Twitter login and shake-triggered compose behavior
 - Keep first-responder motion ownership scoped to the visible shake controller
+- Forward motion subtypes the shake screen does not handle through the responder chain
 - Keep Fabric/Twitter framework assumptions visible
 - Keep vendored framework executables and the Fabric installer SHA-256 pinned
 - Avoid committing real Twitter/Fabric credentials or signing material

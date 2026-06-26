@@ -33,6 +33,7 @@ LOGIN_APPEARANCE_GENERATION_PLAN = ROOT / "docs/plans/2026-06-15-login-appearanc
 LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transition-invalidation.md"
 LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completion-single-use.md"
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-25-shake-first-responder-lifecycle.md"
+MOTION_FORWARDING_PLAN = ROOT / "docs/plans/2026-06-26-nonshake-motion-forwarding.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -238,6 +239,7 @@ def main():
         "docs/plans/2026-06-16-login-completion-single-use.md",
         "docs/plans/2026-06-08-tweet-shake-baseline.md",
         "docs/plans/2026-06-25-shake-first-responder-lifecycle.md",
+        "docs/plans/2026-06-26-nonshake-motion-forwarding.md",
         "docs/readme-overview.svg",
     ]
 
@@ -302,6 +304,7 @@ def main():
     login_transition_invalidation_plan = LOGIN_TRANSITION_INVALIDATION_PLAN.read_text(encoding="utf-8") if LOGIN_TRANSITION_INVALIDATION_PLAN.exists() else ""
     login_completion_reservation_plan = LOGIN_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if LOGIN_COMPLETION_RESERVATION_PLAN.exists() else ""
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
+    motion_forwarding_plan = MOTION_FORWARDING_PLAN.read_text(encoding="utf-8") if MOTION_FORWARDING_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -552,6 +555,37 @@ def main():
             "func testShakeControllerCanBecomeFirstResponder()" in tests and
             "XCTAssertTrue(controller.canBecomeFirstResponder()," in tests,
             "shake controller must own first-responder motion delivery only while visible",
+            failures)
+    motion_ended_index = active_shake_controller.find(
+        "override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent)"
+    )
+    motion_ended_end = active_shake_controller.find(
+        "func beginComposerPresentation() -> Int?", motion_ended_index
+    )
+    motion_ended_body = active_shake_controller[motion_ended_index:motion_ended_end]
+    nonshake_guard_index = motion_ended_body.find(
+        "if motion != UIEventSubtype.MotionShake"
+    )
+    motion_super_index = motion_ended_body.find(
+        "super.motionEnded(motion, withEvent: event)", nonshake_guard_index
+    )
+    motion_return_index = motion_ended_body.find("return", motion_super_index)
+    session_guard_index = motion_ended_body.find("if !hasTwitterSession()")
+    require(motion_ended_index != -1 and motion_ended_end != -1 and
+            nonshake_guard_index != -1 and motion_super_index != -1 and
+            motion_return_index != -1 and session_guard_index != -1 and
+            nonshake_guard_index < motion_super_index < motion_return_index < session_guard_index and
+            motion_ended_body.count("super.motionEnded(motion, withEvent: event)") == 1,
+            "non-shake motion events must be forwarded through the responder chain",
+            failures)
+    require("status: completed" in motion_forwarding_plan and
+            "red-first" in motion_forwarding_plan.lower() and
+            "super.motionEnded(motion, withEvent: event)" in motion_forwarding_plan and
+            "hostile mutations" in motion_forwarding_plan.lower() and
+            "non-shake motion" in readme.lower() and
+            "responder chain" in readme.lower() and
+            "Forward unhandled motion events" in changes,
+            "non-shake motion forwarding plan and documentation must record completed verification",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
