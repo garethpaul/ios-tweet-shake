@@ -202,6 +202,7 @@ class tweetshakeTests: XCTestCase {
 
         controller.viewWillDisappear(false)
 
+        XCTAssertFalse(controller.isShakeViewVisible)
         XCTAssertFalse(controller.reserveComposerCompletion(4, attemptGeneration: 12), "A disappearing shake controller should reject its composer completion")
         XCTAssertNil(controller.activeComposerAttemptGeneration)
         XCTAssertFalse(controller.isShowingComposer)

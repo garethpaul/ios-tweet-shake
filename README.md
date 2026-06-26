@@ -100,6 +100,7 @@ command-line overrides.
   scoped to the screen that can start the user-confirmed composer.
 - The motion override handles only shake endings; non-shake motion events are
   forwarded through UIKit's responder chain for another responder to handle.
+- Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
 
 Example command-line credential override:
 

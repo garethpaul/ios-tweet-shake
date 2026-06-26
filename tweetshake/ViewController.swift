@@ -58,6 +58,10 @@ class ViewController: UIViewController {
             return
         }
 
+        if !isShakeViewVisible {
+            return
+        }
+
         if !hasTwitterSession() {
             showLoginRequiredMessage()
             return

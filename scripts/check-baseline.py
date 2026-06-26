@@ -34,6 +34,7 @@ LOGIN_TRANSITION_INVALIDATION_PLAN = ROOT / "docs/plans/2026-06-16-login-transit
 LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completion-single-use.md"
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-25-shake-first-responder-lifecycle.md"
 MOTION_FORWARDING_PLAN = ROOT / "docs/plans/2026-06-26-nonshake-motion-forwarding.md"
+STALE_SHAKE_PLAN = ROOT / "docs/plans/2026-06-26-stale-shake-visibility-guard.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -305,6 +306,7 @@ def main():
     login_completion_reservation_plan = LOGIN_COMPLETION_RESERVATION_PLAN.read_text(encoding="utf-8") if LOGIN_COMPLETION_RESERVATION_PLAN.exists() else ""
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     motion_forwarding_plan = MOTION_FORWARDING_PLAN.read_text(encoding="utf-8") if MOTION_FORWARDING_PLAN.exists() else ""
+    stale_shake_plan = STALE_SHAKE_PLAN.read_text(encoding="utf-8") if STALE_SHAKE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -420,6 +422,7 @@ def main():
             tests.count("XCTAssertFalse(controller.reserveComposerCompletion") >= 4 and
             "XCTAssertEqual(controller.activeComposerAttemptGeneration, 11)" in tests and
             "XCTAssertEqual(controller.beginComposerPresentation(), 1)" in tests and
+            "XCTAssertFalse(controller.isShakeViewVisible)" in tests and
             "XCTAssertFalse" in tests and "XCTAssertTrue" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "tweetshakeTests must replace template tests with credential helper assertions",
@@ -570,13 +573,17 @@ def main():
         "super.motionEnded(motion, withEvent: event)", nonshake_guard_index
     )
     motion_return_index = motion_ended_body.find("return", motion_super_index)
+    visibility_guard_index = motion_ended_body.find("if !isShakeViewVisible")
+    visibility_return_index = motion_ended_body.find("return", visibility_guard_index)
     session_guard_index = motion_ended_body.find("if !hasTwitterSession()")
     require(motion_ended_index != -1 and motion_ended_end != -1 and
             nonshake_guard_index != -1 and motion_super_index != -1 and
-            motion_return_index != -1 and session_guard_index != -1 and
-            nonshake_guard_index < motion_super_index < motion_return_index < session_guard_index and
+            motion_return_index != -1 and visibility_guard_index != -1 and
+            visibility_return_index != -1 and session_guard_index != -1 and
+            nonshake_guard_index < motion_super_index < motion_return_index <
+            visibility_guard_index < visibility_return_index < session_guard_index and
             motion_ended_body.count("super.motionEnded(motion, withEvent: event)") == 1,
-            "non-shake motion events must be forwarded through the responder chain",
+            "motion handling must forward non-shakes and reject stale shakes before session work",
             failures)
     require("status: completed" in motion_forwarding_plan and
             "red-first" in motion_forwarding_plan.lower() and
@@ -587,6 +594,23 @@ def main():
             "Forward unhandled motion events" in changes,
             "non-shake motion forwarding plan and documentation must record completed verification",
             failures)
+    require("Status: Completed" in stale_shake_plan and
+            "repository-root and external-directory `make check` passed" in stale_shake_plan and
+            "hostile stale-shake mutations" in stale_shake_plan and
+            "Native compilation and physical shake delivery were not performed" in stale_shake_plan,
+            "stale shake visibility plan must record completed verification evidence",
+            failures)
+    stale_shake_guidance = "Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work."
+    for relative_path, document in [
+        ("AGENTS.md", read("AGENTS.md")),
+        ("README.md", readme),
+        ("SECURITY.md", security),
+        ("VISION.md", vision),
+        ("CHANGES.md", changes),
+    ]:
+        require(stale_shake_guidance in document,
+                f"{relative_path} must document the stale shake visibility boundary",
+                failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
             failures)
