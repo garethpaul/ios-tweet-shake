@@ -43,6 +43,7 @@ Priority:
 - Reserve composer presentation and completion by visible appearance and
   single-use attempt so stale callbacks cannot unlock a newer composer
 - Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
+- Shake handling rejects an occupied alert or composer before Twitter session lookup, then rechecks visible idle presentation ownership when reserving the composer.
 - Keep login completion navigation and alerts on the main thread
 - Ignore login completions as soon as the login controller begins disappearing
 - Consume each installed login attempt before completion UI and issue a fresh

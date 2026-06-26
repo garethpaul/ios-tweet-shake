@@ -35,6 +35,7 @@ LOGIN_COMPLETION_RESERVATION_PLAN = ROOT / "docs/plans/2026-06-16-login-completi
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-25-shake-first-responder-lifecycle.md"
 MOTION_FORWARDING_PLAN = ROOT / "docs/plans/2026-06-26-nonshake-motion-forwarding.md"
 STALE_SHAKE_PLAN = ROOT / "docs/plans/2026-06-26-stale-shake-visibility-guard.md"
+SHAKE_PRESENTATION_PREFLIGHT_PLAN = ROOT / "docs/plans/2026-06-26-shake-presentation-preflight.md"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_WORKFLOW = """name: Check
 on:
@@ -307,6 +308,7 @@ def main():
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     motion_forwarding_plan = MOTION_FORWARDING_PLAN.read_text(encoding="utf-8") if MOTION_FORWARDING_PLAN.exists() else ""
     stale_shake_plan = STALE_SHAKE_PLAN.read_text(encoding="utf-8") if STALE_SHAKE_PLAN.exists() else ""
+    shake_presentation_preflight_plan = SHAKE_PRESENTATION_PREFLIGHT_PLAN.read_text(encoding="utf-8") if SHAKE_PRESENTATION_PREFLIGHT_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     fabric = app_plist.get("Fabric", {})
@@ -408,6 +410,7 @@ def main():
             "testStaleComposerCompletionCannotClearNewAttempt" in tests and
             "testComposerCompletionIsInvalidatedWhenDisappearanceBegins" in tests and
             "testComposerPresentationReservationRequiresVisibleIdleController" in tests and
+            "testShakePresentationPreflightRequiresVisibleIdleController" in tests and
             "controller.viewWillDisappear(false)" in tests and
             "XCTAssertTrue(controller.reserveLoginCompletion(2, attemptGeneration: 7)" in tests and
             tests.count("XCTAssertFalse(controller.reserveLoginCompletion") >= 4 and
@@ -563,7 +566,7 @@ def main():
         "override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent)"
     )
     motion_ended_end = active_shake_controller.find(
-        "func beginComposerPresentation() -> Int?", motion_ended_index
+        "func canBeginComposerPresentation() -> Bool", motion_ended_index
     )
     motion_ended_body = active_shake_controller[motion_ended_index:motion_ended_end]
     nonshake_guard_index = motion_ended_body.find(
@@ -575,15 +578,34 @@ def main():
     motion_return_index = motion_ended_body.find("return", motion_super_index)
     visibility_guard_index = motion_ended_body.find("if !isShakeViewVisible")
     visibility_return_index = motion_ended_body.find("return", visibility_guard_index)
+    presentation_preflight_index = motion_ended_body.find("if !canBeginComposerPresentation()")
+    presentation_preflight_return_index = motion_ended_body.find("return", presentation_preflight_index)
     session_guard_index = motion_ended_body.find("if !hasTwitterSession()")
+    preflight_index = active_shake_controller.find("func canBeginComposerPresentation() -> Bool")
+    preflight_end = active_shake_controller.find("func beginComposerPresentation() -> Int?", preflight_index)
+    preflight_body = active_shake_controller[preflight_index:preflight_end]
+    begin_presentation_end = active_shake_controller.find("func reserveComposerCompletion", preflight_end)
+    begin_presentation_body = active_shake_controller[preflight_end:begin_presentation_end]
     require(motion_ended_index != -1 and motion_ended_end != -1 and
             nonshake_guard_index != -1 and motion_super_index != -1 and
             motion_return_index != -1 and visibility_guard_index != -1 and
             visibility_return_index != -1 and session_guard_index != -1 and
             nonshake_guard_index < motion_super_index < motion_return_index <
-            visibility_guard_index < visibility_return_index < session_guard_index and
+            visibility_guard_index < visibility_return_index < presentation_preflight_index <
+            presentation_preflight_return_index < session_guard_index and
+            preflight_index != -1 and preflight_end != -1 and
+            "return isShakeViewVisible &&" in preflight_body and
+            "activeComposerAttemptGeneration == nil &&" in preflight_body and
+            "presentedViewController == nil" in preflight_body and
+            "guard canBeginComposerPresentation() else" in begin_presentation_body and
             motion_ended_body.count("super.motionEnded(motion, withEvent: event)") == 1,
-            "motion handling must forward non-shakes and reject stale shakes before session work",
+            "motion handling must reject occupied presentation before Twitter session work",
+            failures)
+    require("Status: Completed" in shake_presentation_preflight_plan and
+            "red-first" in shake_presentation_preflight_plan.lower() and
+            "hostile presentation-preflight mutations" in shake_presentation_preflight_plan and
+            "repository-root and external-directory `make check` passed" in shake_presentation_preflight_plan,
+            "shake presentation preflight plan must record completed verification evidence",
             failures)
     require("status: completed" in motion_forwarding_plan and
             "red-first" in motion_forwarding_plan.lower() and
@@ -610,6 +632,17 @@ def main():
     ]:
         require(stale_shake_guidance in document,
                 f"{relative_path} must document the stale shake visibility boundary",
+                failures)
+    presentation_preflight_guidance = "Shake handling rejects an occupied alert or composer before Twitter session lookup, then rechecks visible idle presentation ownership when reserving the composer."
+    for relative_path, document in [
+        ("AGENTS.md", read("AGENTS.md")),
+        ("README.md", readme),
+        ("SECURITY.md", security),
+        ("VISION.md", vision),
+        ("CHANGES.md", changes),
+    ]:
+        require(presentation_preflight_guidance in document,
+                f"{relative_path} must document shake presentation preflight",
                 failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", swift_sources),
             "first-party Swift must not log Twitter session or compose outcomes",
