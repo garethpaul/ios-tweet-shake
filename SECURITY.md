@@ -56,6 +56,7 @@ credentials or account data in a modernized build.
 - Keep first-responder motion ownership scoped to the visible shake controller;
   acquire only after appearance and resign before disappearance.
 - Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
+- Shake handling rejects an occupied alert or composer before Twitter session lookup, then rechecks visible idle presentation ownership when reserving the composer.
   A stale or duplicate callback must not clear a newer composer guard, and a
   controller that is disappearing or already presenting UI must not start one.
 - Route login completion navigation and alerts on the main thread without

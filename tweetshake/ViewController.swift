@@ -62,6 +62,10 @@ class ViewController: UIViewController {
             return
         }
 
+        if !canBeginComposerPresentation() {
+            return
+        }
+
         if !hasTwitterSession() {
             showLoginRequiredMessage()
             return
@@ -87,10 +91,14 @@ class ViewController: UIViewController {
         }
     }
 
+    func canBeginComposerPresentation() -> Bool {
+        return isShakeViewVisible &&
+               activeComposerAttemptGeneration == nil &&
+               presentedViewController == nil
+    }
+
     func beginComposerPresentation() -> Int? {
-        guard isShakeViewVisible &&
-              activeComposerAttemptGeneration == nil &&
-              presentedViewController == nil else {
+        guard canBeginComposerPresentation() else {
             return nil
         }
 

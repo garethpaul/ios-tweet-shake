@@ -101,6 +101,7 @@ command-line overrides.
 - The motion override handles only shake endings; non-shake motion events are
   forwarded through UIKit's responder chain for another responder to handle.
 - Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
+- Shake handling rejects an occupied alert or composer before Twitter session lookup, then rechecks visible idle presentation ownership when reserving the composer.
 
 Example command-line credential override:
 
@@ -177,6 +178,7 @@ authentication, compose, Swift, or deployment-target layers.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
 - See `docs/plans/2026-06-10-credential-setup-message-guard.md` for the credential setup message guardrail.
 - See `docs/plans/2026-06-25-shake-first-responder-lifecycle.md` for visible-screen motion responder ownership.
+- See `docs/plans/2026-06-26-shake-presentation-preflight.md` for occupied-presentation rejection before account lookup.
 
 ## Contributing
 

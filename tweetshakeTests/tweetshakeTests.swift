@@ -219,4 +219,15 @@ class tweetshakeTests: XCTestCase {
         XCTAssertTrue(controller.isShowingComposer)
     }
 
+    func testShakePresentationPreflightRequiresVisibleIdleController() {
+        let controller = ViewController()
+        XCTAssertFalse(controller.canBeginComposerPresentation(), "A hidden controller must not inspect account state for a shake")
+
+        controller.isShakeViewVisible = true
+        XCTAssertTrue(controller.canBeginComposerPresentation())
+
+        controller.activeComposerAttemptGeneration = 1
+        XCTAssertFalse(controller.canBeginComposerPresentation(), "An active composer must block account lookup for another shake")
+    }
+
 }

@@ -1,5 +1,22 @@
 # Changes
 
+## 2026-06-26 15:48 - P1 - Reject occupied shake presentation before account lookup
+
+- Shake handling rejects an occupied alert or composer before Twitter session lookup, then rechecks visible idle presentation ownership when reserving the composer.
+- Added red-first static ordering and XCTest coverage for hidden and active-composer preflight rejection.
+- Preserved shake forwarding, stale-view rejection, session requirements, user-confirmed composition, and completion generation ownership.
+- Seven hostile mutations covering preflight removal/reordering, active-attempt
+  rejection, reservation recheck, XCTest evidence, guidance, and plan status
+  were rejected.
+- `make lint`, `make test`, `make build`, repository-root and external-directory
+  `make check`, Python compilation, and `git diff --check` passed. Native Swift
+  execution remains unavailable on this host.
+- Hosted push baseline `28269500144`, pull-request baseline `28269501676`, and
+  CodeQL run `28269500778` passed on implementation head
+  `6463f23ebe76ea6fff115d8b7f8263f68e8f2d1f`.
+- Codex review stopped before analysis with OpenAI HTTP 401; immutable manual
+  review found no actionable issues.
+
 ## 2026-06-26 - P1 - Reject stale shake callbacks
 
 - Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
