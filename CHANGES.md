@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-26 - P1 - Reject stale shake callbacks
+
+- Shake handling returns when the shake screen is no longer visible, before Twitter session lookup or alert/composer work.
+- Added red-first motion ordering coverage and direct disappearance-state XCTest evidence.
+
 ## 2026-06-26 - P2 - Forward unhandled motion events
 
 ### Summary
