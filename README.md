@@ -98,6 +98,8 @@ command-line overrides.
 - The visible shake controller explicitly acquires first-responder status after
   appearing and resigns before disappearing, keeping physical motion delivery
   scoped to the screen that can start the user-confirmed composer.
+- The motion override handles only shake endings; non-shake motion events are
+  forwarded through UIKit's responder chain for another responder to handle.
 
 Example command-line credential override:
 
