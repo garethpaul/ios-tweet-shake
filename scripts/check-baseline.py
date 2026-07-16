@@ -272,10 +272,21 @@ def main():
     test_plist = parse_plist("tweetshakeTests/Info.plist", failures)
     project = read("tweetshake.xcodeproj/project.pbxproj")
     tests = read("tweetshakeTests/tweetshakeTests.swift")
-    app_delegate = read("tweetshake/AppDelegate.swift")
-    login_controller = read("tweetshake/LoginViewController.swift")
-    shake_controller = read("tweetshake/ViewController.swift")
-    active_shake_controller = strip_swift_comments(shake_controller)
+    # Strip comments on every Swift source, not just ViewController.swift. This
+    # file already had strip_swift_comments and applied it to exactly one of the
+    # three controllers, so AppDelegate.swift and LoginViewController.swift were
+    # asserted against raw text -- and a commented-out guard satisfies its own
+    # assertion, because the literal is byte-identical inside /* ... */.
+    #
+    # Verified before this change: block-commenting the guard in
+    # reserveLoginCompletion left `make check` at exit 0 while the function
+    # unconditionally returned true, accepting stale and duplicate login
+    # completions. Deleting the same guard outright IS caught, which is what proves
+    # the assertion is live rather than dead.
+    app_delegate = strip_swift_comments(read("tweetshake/AppDelegate.swift"))
+    login_controller = strip_swift_comments(read("tweetshake/LoginViewController.swift"))
+    shake_controller = strip_swift_comments(read("tweetshake/ViewController.swift"))
+    active_shake_controller = shake_controller
     swift_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
                               for path in sorted((ROOT / "tweetshake").glob("*.swift")))
     readme = read("README.md")
